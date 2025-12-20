@@ -32,8 +32,8 @@
       };
 
       window.addEventListener('error', function(event) {
-        if (event.target.tagName === 'SCRIPT') {
-          showError(`Module Load Failure: ${event.target.src}`);
+        if (event.target && event.target.tagName === 'SCRIPT') {
+          showError(`Module Load Failure: ${event.target.src}\nCheck if the file exists or if the version in importmap is correct.`);
         }
       }, true);
 
@@ -44,13 +44,13 @@
           const pre = document.createElement('pre');
           pre.style.whiteSpace = 'pre-wrap';
           pre.style.marginTop = '1rem';
+          pre.style.fontSize = '0.75rem';
           pre.textContent = text;
           display.appendChild(pre);
         }
       }
       
-      // Shim process.env for Gemini SDK and Firebase
-      window.process = window.process || { env: {} };
+      window.process = { env: {} };
     </script>
     <script type="importmap">
 {
@@ -70,7 +70,7 @@
   }
 }
 </script>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="index.tsx"></script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
