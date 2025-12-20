@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle, ShieldCheck, ExternalLink, Settings } from 'lucide-react';
-import { signInUser, signUpUser, isFirebaseConfigured } from '../services/firebase';
+import { signInUser, signUpUser, isFirebaseConfigured } from '../services/firebase.ts';
 
 export const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

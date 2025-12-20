@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, Filter, FileText, CheckCircle, ChevronRight, SortAsc, Share2, ClipboardList, UserCheck, X, Copy, Check } from 'lucide-react';
-import { Form } from '../types';
+import { Form } from '../types.ts';
 
 interface DashboardProps {
   forms: Form[];

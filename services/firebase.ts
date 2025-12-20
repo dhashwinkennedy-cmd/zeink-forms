@@ -21,7 +21,7 @@ import {
   signOut as firebaseSignOut,
   Auth
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { Form, FormResponse } from "../types";
+import { Form, FormResponse } from "../types.ts";
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || "",
