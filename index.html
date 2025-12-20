@@ -26,14 +26,13 @@
       }
     </style>
     <script>
-      // Global error handler to catch initialization failures
       window.onerror = function(msg, url, line, col, error) {
         showError(`Runtime Error: ${msg}\nAt: ${url}:${line}`);
       };
 
       window.addEventListener('error', function(event) {
         if (event.target && event.target.tagName === 'SCRIPT') {
-          showError(`Module Load Failure: ${event.target.src}\nCheck if the file exists or if the version in importmap is correct.`);
+          showError(`Module Load Failure: ${event.target.src}\nEnsure the file exists and the Vercel rewrite isn't blocking it.`);
         }
       }, true);
 
@@ -70,7 +69,7 @@
   }
 }
 </script>
-    <script type="module" src="index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
