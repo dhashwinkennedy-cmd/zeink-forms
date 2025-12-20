@@ -24,9 +24,16 @@
         z-index: 9999;
         font-family: monospace;
       }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+      }
     </style>
     <script>
-      window.process = { env: {} };
+      window.process = { env: { API_KEY: "" } };
       window.onerror = function(msg, url, line) {
         const display = document.getElementById('error-display');
         if (display) {
@@ -36,7 +43,7 @@
             <p style="color: #ff1a1a; margin-bottom: 1rem;">${msg}</p>
             <p style="opacity: 0.5; font-size: 0.8rem; color: white;">File: ${url}</p>
             <p style="opacity: 0.5; font-size: 0.8rem; color: white;">Line: ${line}</p>
-            <button onclick="window.location.reload()" style="margin-top: 2rem; padding: 1rem 2rem; background: #ff1a1a; color: white; border: none; font-weight: 900; cursor: pointer;">REBOOT SYSTEM</button>
+            <button onclick="window.location.reload()" style="margin-top: 2rem; padding: 1rem 2rem; background: #ff1a1a; color: white; border: none; font-weight: 900; cursor: pointer; border-radius: 8px;">REBOOT SYSTEM</button>
           `;
         }
       };

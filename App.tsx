@@ -58,14 +58,34 @@ export default function App() {
     return <Auth />;
   }
 
+  const handleCreateForm = () => {
+    const newForm: Form = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'New Logic Form',
+      description: '',
+      pages: [{ id: 'p1', title: 'Welcome Page', fields: [] }],
+      status: 'draft',
+      createdAt: Date.now(),
+      ownerId: user.uid,
+      responsesCount: 0
+    };
+    setActiveForm(newForm);
+    setView('editor');
+  };
+
+  const handleSignOut = async () => {
+    await signOutUser();
+    setView('dashboard');
+  };
+
   return (
     <div className="min-h-screen selection:bg-[#ff1a1a] selection:text-white">
       {view !== 'responder' && (
         <Navbar 
           user={user} 
-          onHome={() => setView('dashboard')} 
+          onHome={() => { setView('dashboard'); setActiveForm(null); }} 
           isDemo={!isFirebaseConfigured}
-          onSignOut={() => signOutUser()}
+          onSignOut={handleSignOut}
         />
       )}
 
@@ -75,20 +95,7 @@ export default function App() {
             forms={forms}
             responses={responses}
             onFormClick={(f) => { setActiveForm(f); setView('details'); }} 
-            onCreateClick={() => {
-              const newForm: Form = {
-                id: Math.random().toString(36).substr(2, 9),
-                title: 'New Logic Form',
-                description: '',
-                pages: [{ id: 'p1', title: 'Welcome Page', fields: [] }],
-                status: 'draft',
-                createdAt: Date.now(),
-                ownerId: user.uid,
-                responsesCount: 0
-              };
-              setActiveForm(newForm);
-              setView('editor');
-            }}
+            onCreateClick={handleCreateForm}
             onRespondClick={() => setView('responder')}
             onResponseClick={(r) => {
               const f = forms.find(form => form.id === r.formId);
@@ -105,14 +112,14 @@ export default function App() {
             form={activeForm} 
             responses={responses.filter(r => r.formId === activeForm.id)}
             onEdit={() => setView('editor')} 
-            onBack={() => setView('dashboard')} 
+            onBack={() => { setView('dashboard'); setActiveForm(null); }} 
           />
         )}
 
         {view === 'editor' && activeForm && (
           <FormEditor 
             form={activeForm} 
-            onBack={() => setView('dashboard')}
+            onBack={() => { setView('dashboard'); setActiveForm(null); }}
             onUpdateForm={(updated) => setActiveForm(updated)}
           />
         )}
@@ -129,10 +136,14 @@ export default function App() {
                    onKeyDown={async (e) => {
                      if (e.key === 'Enter') {
                        const val = (e.target as HTMLInputElement).value;
+                       // Check local forms first for convenience in demo
                        const localForms = JSON.parse(localStorage.getItem('zienk_forms') || '[]');
                        const found = localForms.find((f: any) => f.id === val);
-                       if (found) setActiveForm(found);
-                       else alert("Form not found in local engine.");
+                       if (found) {
+                         setActiveForm(found);
+                       } else {
+                         alert("Form not found. Ensure the ID is correct.");
+                       }
                      }
                    }}
                  />
