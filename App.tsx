@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { auth, subscribeToMyForms, subscribeToAllMyResponses, isFirebaseConfigured } from './services/firebase.ts';
+import { auth, subscribeToMyForms, subscribeToAllMyResponses, isFirebaseConfigured, signOutUser } from './services/firebase.ts';
 import { Navbar } from './components/Navbar.tsx';
 import { Auth } from './components/Auth.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
@@ -16,35 +16,47 @@ export default function App() {
   const [activeForm, setActiveForm] = useState<Form | null>(null);
   const [forms, setForms] = useState<Form[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u: any) => {
+    // Sync Auth State
+    const unsubscribeAuth = auth.onAuthStateChanged((u: any) => {
       setUser(u);
-      setLoading(false);
+      setIsInitializing(false);
     });
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
 
   useEffect(() => {
     if (user?.uid) {
-      const unsubForms = subscribeToMyForms(user.uid, setForms);
-      const unsubRes = subscribeToAllMyResponses(user.uid, setResponses);
+      const unsubForms = subscribeToMyForms(user.uid, (updatedForms) => {
+        setForms(updatedForms);
+      });
+      const unsubRes = subscribeToAllMyResponses(user.uid, (updatedResponses) => {
+        setResponses(updatedResponses);
+      });
       return () => {
         unsubForms();
         unsubRes();
       };
+    } else {
+      setForms([]);
+      setResponses([]);
     }
   }, [user]);
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEECEC]">
-      <Loader2 className="w-10 h-10 text-[#ff1a1a] animate-spin mb-4" />
-      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Initializing Engine...</span>
-    </div>
-  );
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEECEC]">
+        <Loader2 className="w-10 h-10 text-[#ff1a1a] animate-spin mb-4" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Booting Engine...</span>
+      </div>
+    );
+  }
 
-  if (!user) return <Auth />;
+  if (!user) {
+    return <Auth />;
+  }
 
   return (
     <div className="min-h-screen selection:bg-[#ff1a1a] selection:text-white">
@@ -53,10 +65,7 @@ export default function App() {
           user={user} 
           onHome={() => setView('dashboard')} 
           isDemo={!isFirebaseConfigured}
-          onSignOut={() => {
-            localStorage.removeItem('zienk_auth_user');
-            window.location.reload();
-          }}
+          onSignOut={() => signOutUser()}
         />
       )}
 
@@ -69,9 +78,9 @@ export default function App() {
             onCreateClick={() => {
               const newForm: Form = {
                 id: Math.random().toString(36).substr(2, 9),
-                title: 'Untitled Form',
+                title: 'New Logic Form',
                 description: '',
-                pages: [{ id: 'p1', title: 'Welcome', fields: [] }],
+                pages: [{ id: 'p1', title: 'Welcome Page', fields: [] }],
                 status: 'draft',
                 createdAt: Date.now(),
                 ownerId: user.uid,
@@ -109,32 +118,33 @@ export default function App() {
         )}
 
         {view === 'responder' && (
-          <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-white">
-            <h2 className="text-xl font-black mb-4">Enter Form ID</h2>
-            <input 
-              type="text" 
-              placeholder="Form ID..." 
-              className="px-6 py-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-center mb-4"
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
-                  const target = e.target as HTMLInputElement;
-                  const formsList = JSON.parse(localStorage.getItem('zienk_forms') || '[]');
-                  const f = formsList.find((form: any) => form.id === target.value);
-                  if (f) {
-                    setActiveForm(f);
-                  } else {
-                    alert("Form not found in local library.");
-                  }
-                }
-              }}
-            />
-            {activeForm && (
-              <FormResponder 
-                form={activeForm}
-                userResponses={responses}
-                onExit={() => setView('dashboard')} 
-              />
-            )}
+          <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8">
+             {!activeForm ? (
+               <div className="w-full max-w-md text-center">
+                 <h2 className="text-2xl font-black mb-6">Enter Form ID</h2>
+                 <input 
+                   type="text" 
+                   placeholder="e.g. x8j2k9..." 
+                   className="w-full px-6 py-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-center mb-4 focus:ring-2 ring-[#ff1a1a]/20 transition-all"
+                   onKeyDown={async (e) => {
+                     if (e.key === 'Enter') {
+                       const val = (e.target as HTMLInputElement).value;
+                       const localForms = JSON.parse(localStorage.getItem('zienk_forms') || '[]');
+                       const found = localForms.find((f: any) => f.id === val);
+                       if (found) setActiveForm(found);
+                       else alert("Form not found in local engine.");
+                     }
+                   }}
+                 />
+                 <button onClick={() => setView('dashboard')} className="text-xs font-black text-gray-400 uppercase tracking-widest">Back to Dashboard</button>
+               </div>
+             ) : (
+               <FormResponder 
+                 form={activeForm}
+                 userResponses={responses}
+                 onExit={() => { setView('dashboard'); setActiveForm(null); }} 
+               />
+             )}
           </div>
         )}
       </main>
