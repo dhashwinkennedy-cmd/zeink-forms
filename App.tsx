@@ -19,7 +19,6 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    // Sync Auth State
     const unsubscribeAuth = auth.onAuthStateChanged((u: any) => {
       setUser(u);
       setIsInitializing(false);
@@ -76,6 +75,7 @@ export default function App() {
   const handleSignOut = async () => {
     await signOutUser();
     setView('dashboard');
+    setActiveForm(null);
   };
 
   return (
@@ -136,7 +136,6 @@ export default function App() {
                    onKeyDown={async (e) => {
                      if (e.key === 'Enter') {
                        const val = (e.target as HTMLInputElement).value;
-                       // Check local forms first for convenience in demo
                        const localForms = JSON.parse(localStorage.getItem('zienk_forms') || '[]');
                        const found = localForms.find((f: any) => f.id === val);
                        if (found) {
