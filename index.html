@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -13,9 +14,6 @@
         margin: 0;
         overflow-x: hidden;
       }
-      .zienk-gradient {
-        background: linear-gradient(135deg, #ff1a1a 0%, #d41515 100%);
-      }
       #error-display {
         display: none;
         position: fixed;
@@ -26,15 +24,6 @@
         z-index: 9999;
         font-family: monospace;
       }
-      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #ff1a1a22; border-radius: 10px; }
-      
-      @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-      }
-      .animate-float { animation: float 3s ease-in-out infinite; }
     </style>
     <script>
       window.process = { env: {} };
@@ -42,7 +31,7 @@
         const display = document.getElementById('error-display');
         if (display) {
           display.style.display = 'block';
-          display.innerHTML = `<h1 style="font-size: 2rem; font-weight: 900; margin-bottom: 1rem;">ENGINE HALT</h1><p>${msg}</p><p style="opacity: 0.5; font-size: 0.8rem;">Line: ${line} | ${url}</p>`;
+          display.innerHTML = `<h1 style="color: white; font-size: 1.5rem; font-weight: 900; margin-bottom: 1rem;">ENGINE HALT</h1><p style="color: #ff1a1a">${msg}</p><p style="opacity: 0.5; font-size: 0.8rem; color: white;">${url} : Line ${line}</p>`;
         }
       };
     </script>
@@ -63,7 +52,7 @@
   }
 }
 </script>
-    <script type="module" src="index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   <link rel="stylesheet" href="/index.css">
 </head>
   <body>
