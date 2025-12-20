@@ -1,5 +1,4 @@
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
   collection, 
@@ -11,14 +10,14 @@ import {
   onSnapshot,
   increment,
   updateDoc
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+} from "firebase/firestore";
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signOut as firebaseSignOut
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+} from "firebase/auth";
 import { Form, FormResponse } from "../types.ts";
 
 const firebaseConfig = {
@@ -30,7 +29,6 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID || ""
 };
 
-// Guard against missing configuration
 export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
 let app: any;
@@ -61,7 +59,6 @@ const sanitize = (obj: any): any => {
   return obj;
 };
 
-// Auth Actions
 export const signUpUser = (email: string, pass: string) => {
   if (!auth) throw new Error("Auth not initialized");
   return createUserWithEmailAndPassword(auth, email, pass);

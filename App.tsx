@@ -9,7 +9,7 @@ import { Auth } from './components/Auth.tsx';
 import { Form, FormResponse } from './types.ts';
 import { Plus, X, Loader2, FileText, Settings, ShieldAlert, ExternalLink, Info } from 'lucide-react';
 import { auth, saveFormToCloud, subscribeToMyForms, fetchFormById, subscribeToAllMyResponses, signOutUser, isFirebaseConfigured } from './services/firebase.ts';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { onAuthStateChanged } from "firebase/auth";
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -30,11 +30,8 @@ const App: React.FC = () => {
   const [respondError, setRespondError] = useState<string | null>(null);
   const [respondLoading, setRespondLoading] = useState(false);
   
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [shareForm, setShareForm] = useState<Form | null>(null);
-  const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) {
@@ -174,18 +171,8 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-2xl font-black text-[#0a0b10] mb-4">Setup Required</h1>
           <p className="text-sm text-gray-500 font-bold mb-8 leading-relaxed">
-            Zienk Forms needs your <span className="text-[#ff1a1a]">Firebase Keys</span> to function. Please add them to your deployment environment variables.
+            Zienk Forms needs your <span className="text-[#ff1a1a]">Firebase Keys</span>.
           </p>
-          <div className="space-y-3 text-left mb-8">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm">1</div>
-              <span className="text-[11px] font-black uppercase text-gray-400">Add FIREBASE_API_KEY</span>
-            </div>
-            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm">2</div>
-              <span className="text-[11px] font-black uppercase text-gray-400">Add FIREBASE_PROJECT_ID</span>
-            </div>
-          </div>
           <a href="https://console.firebase.google.com/" target="_blank" className="flex items-center justify-center gap-2 w-full py-4 bg-[#0a0b10] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
             Firebase Console <ExternalLink className="w-4 h-4" />
           </a>
@@ -249,9 +236,8 @@ const App: React.FC = () => {
         />
       ) : null}
 
-      {/* Popups & Modals */}
       {showCreatePopup && (
-        <div className="fixed inset-0 bg-[#0a0b10]/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-[#0a0b10]/90 backdrop-blur-xl z-[200] flex items-center justify-center p-6">
           <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-8 sm:p-10 text-center">
             <div className="flex justify-end mb-4"><button onClick={() => setShowCreatePopup(false)} className="p-2 text-gray-300"><X className="w-5 h-5" /></button></div>
             <h2 className="text-2xl font-black text-[#0a0b10] mb-8">New Form</h2>
@@ -264,7 +250,7 @@ const App: React.FC = () => {
       )}
 
       {showRespondModal && (
-        <div className="fixed inset-0 bg-[#0a0b10]/95 backdrop-blur-2xl z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-[#0a0b10]/95 backdrop-blur-2xl z-[200] flex items-center justify-center p-6">
           <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-8 sm:p-10">
             <div className="flex items-center justify-between mb-8"><h3 className="text-2xl font-black text-[#0a0b10]">Open Form</h3><button onClick={() => setShowRespondModal(false)} className="p-2 text-gray-400"><X className="w-6 h-6" /></button></div>
             <div className="space-y-6">
