@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Calendar, Send, Clock, User, Wallet, LogOut } from 'lucide-react';
+import { ChevronDown, Calendar, Send, Clock, User, Wallet, LogOut, DatabaseZap } from 'lucide-react';
 
 interface NavbarProps {
   onHomeClick: () => void;
@@ -10,6 +9,7 @@ interface NavbarProps {
   onPublish: () => void;
   onScheduleClick: () => void;
   isSaving?: boolean;
+  isDemo?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -19,7 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   showPublish, 
   onPublish, 
   onScheduleClick,
-  isSaving 
+  isSaving,
+  isDemo
 }) => {
   const [showPublishDropdown, setShowPublishDropdown] = useState(false);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -43,7 +44,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-white font-black text-lg sm:text-2xl italic">Z</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[#0a0b10] font-black text-sm sm:text-xl tracking-tighter leading-none">Zienk</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[#0a0b10] font-black text-sm sm:text-xl tracking-tighter leading-none">Zienk</span>
+            {isDemo && (
+              <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border border-amber-100">
+                <DatabaseZap className="w-2 h-2" /> Demo
+              </span>
+            )}
+          </div>
           <span className="hidden sm:inline text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Forms Engine</span>
         </div>
       </div>
@@ -85,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="absolute top-full right-0 mt-3 w-56 sm:w-72 bg-white rounded-[2rem] shadow-2xl border border-gray-50 overflow-hidden animate-in fade-in zoom-in-95">
               <div className="p-6 bg-gray-50/50 border-b border-gray-100">
                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Account</p>
-                <p className="text-xs font-black text-[#0a0b10] truncate">Active User</p>
+                <p className="text-xs font-black text-[#0a0b10] truncate">Demo Architect</p>
               </div>
               <div className="p-2">
                 <button onClick={() => { setShowAccountDropdown(false); onWalletClick(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 rounded-xl transition-all group">

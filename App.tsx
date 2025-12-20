@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar.tsx';
 import { Dashboard } from './components/Dashboard.tsx';
@@ -6,10 +5,9 @@ import { FormEditor } from './components/FormEditor.tsx';
 import { FormResponder } from './components/FormResponder.tsx';
 import { FormDetails } from './components/FormDetails.tsx';
 import { Auth } from './components/Auth.tsx';
-import { Form, FormResponse } from './types.ts';
-import { Plus, X, Loader2, FileText, Settings, ShieldAlert, ExternalLink, Info } from 'lucide-react';
+import { Form } from './types.ts';
+import { X, Loader2, Plus } from 'lucide-react';
 import { auth, saveFormToCloud, subscribeToMyForms, fetchFormById, subscribeToAllMyResponses, signOutUser, isFirebaseConfigured } from './services/firebase.ts';
-import { onAuthStateChanged } from "firebase/auth";
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -24,7 +22,6 @@ const App: React.FC = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showRespondModal, setShowRespondModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [selectedResponseForReport, setSelectedResponseForReport] = useState<any | null>(null);
   
   const [respondInput, setRespondInput] = useState('');
   const [respondError, setRespondError] = useState<string | null>(null);
@@ -34,15 +31,10 @@ const App: React.FC = () => {
   const [shareForm, setShareForm] = useState<Form | null>(null);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
-      setIsLoading(false);
-      return;
-    }
-
     let unsubscribeForms: (() => void) | undefined;
     let unsubscribeResponses: (() => void) | undefined;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user: any) => {
+    const handleAuth = (user: any) => {
       setCurrentUser(user);
       if (user) {
         unsubscribeForms = subscribeToMyForms(user.uid, (cloudForms) => {
@@ -58,21 +50,23 @@ const App: React.FC = () => {
         setIsLoading(false);
         setView('dashboard');
       }
-    });
-
-    return () => {
-      if (unsubscribeForms) unsubscribeForms();
-      if (unsubscribeResponses) unsubscribeResponses();
-      unsubscribeAuth();
     };
+
+    if (isFirebaseConfigured && (auth as any).onAuthStateChanged) {
+      const unsubscribeAuth = (auth as any).onAuthStateChanged(handleAuth);
+      return () => {
+        if (unsubscribeForms) unsubscribeForms();
+        if (unsubscribeResponses) unsubscribeResponses();
+        unsubscribeAuth();
+      };
+    } else {
+      // Demo Mode Initialization
+      handleAuth(auth.currentUser);
+    }
   }, []);
 
   const handleSignOut = async () => {
-    try {
-      await signOutUser();
-    } catch (e) {
-      console.error("Sign out error:", e);
-    }
+    await signOutUser();
   };
 
   const handleCreateNew = async () => {
@@ -162,30 +156,11 @@ const App: React.FC = () => {
     setTimeout(() => setSyncStatus('idle'), 2000);
   }, []);
 
-  if (!isFirebaseConfigured) {
-    return (
-      <div className="min-h-screen bg-[#FEECEC] flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl p-8 sm:p-12 text-center border border-white">
-          <div className="w-20 h-20 bg-amber-100 rounded-[1.5rem] flex items-center justify-center mx-auto mb-8 text-amber-600">
-            <ShieldAlert className="w-10 h-10" />
-          </div>
-          <h1 className="text-2xl font-black text-[#0a0b10] mb-4">Setup Required</h1>
-          <p className="text-sm text-gray-500 font-bold mb-8 leading-relaxed">
-            Zienk Forms needs your <span className="text-[#ff1a1a]">Firebase Keys</span>.
-          </p>
-          <a href="https://console.firebase.google.com/" target="_blank" className="flex items-center justify-center gap-2 w-full py-4 bg-[#0a0b10] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all">
-            Firebase Console <ExternalLink className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEECEC]">
         <Loader2 className="w-10 h-10 text-[#ff1a1a] animate-spin mb-3" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Engine...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Zienk Engine...</p>
       </div>
     );
   }
@@ -203,6 +178,7 @@ const App: React.FC = () => {
           onPublish={handlePublish}
           onScheduleClick={() => setShowScheduleModal(true)}
           isSaving={isPublishing}
+          isDemo={!isFirebaseConfigured}
         />
       )}
       
@@ -212,7 +188,7 @@ const App: React.FC = () => {
           responses={responses}
           onCreateClick={() => setShowCreatePopup(true)}
           onRespondClick={() => setShowRespondModal(true)}
-          onResponseClick={(resp) => setSelectedResponseForReport(resp)}
+          onResponseClick={() => {}} 
           onFormClick={(form) => { setActiveForm(form); setView('details'); }}
         />
       ) : view === 'details' && activeForm ? (

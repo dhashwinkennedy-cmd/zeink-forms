@@ -33,110 +33,137 @@ export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.
 
 let app: any;
 let db: any;
-let auth: any;
+let authInstance: any;
 
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    auth = getAuth(app);
+    authInstance = getAuth(app);
   } catch (e) {
     console.error("Firebase initialization failed:", e);
   }
 }
 
-export { db, auth };
+// --- MOCK PERSISTENCE FOR PREVIEW MODE ---
+const getLocalData = (key: string) => JSON.parse(localStorage.getItem(`zienk_${key}`) || '[]');
+const setLocalData = (key: string, data: any) => localStorage.setItem(`zienk_${key}`, JSON.stringify(data));
 
-const sanitize = (obj: any): any => {
-  if (Array.isArray(obj)) return obj.map(sanitize);
-  if (obj !== null && typeof obj === "object") {
-    return Object.fromEntries(
-      Object.entries(obj)
-        .filter(([_, v]) => v !== undefined)
-        .map(([k, v]) => [k, sanitize(v)])
-    );
+const mockUser = {
+  uid: 'demo-user-123',
+  email: 'demo@zienk.io',
+  displayName: 'Demo Architect'
+};
+
+const mockAuth = {
+  get currentUser() {
+    return JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
+  },
+  onAuthStateChanged: (callback: any) => {
+    const user = JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
+    callback(user);
+    // Listen for storage changes to sync across tabs if needed
+    const listener = (e: StorageEvent) => {
+      if (e.key === 'zienk_auth_user') {
+        callback(JSON.parse(e.newValue || 'null'));
+      }
+    };
+    window.addEventListener('storage', listener);
+    return () => window.removeEventListener('storage', listener);
   }
-  return obj;
 };
 
-export const signUpUser = (email: string, pass: string) => {
-  if (!auth) throw new Error("Auth not initialized");
-  return createUserWithEmailAndPassword(auth, email, pass);
+export const auth = isFirebaseConfigured ? authInstance : mockAuth;
+
+export const signUpUser = async (email: string, pass: string) => {
+  if (isFirebaseConfigured) return createUserWithEmailAndPassword(auth, email, pass);
+  const user = { ...mockUser, email };
+  localStorage.setItem('zienk_auth_user', JSON.stringify(user));
+  window.dispatchEvent(new Event('storage')); // Trigger local update
+  return { user };
 };
 
-export const signInUser = (email: string, pass: string) => {
-  if (!auth) throw new Error("Auth not initialized");
-  return signInWithEmailAndPassword(auth, email, pass);
+export const signInUser = async (email: string, pass: string) => {
+  if (isFirebaseConfigured) return signInWithEmailAndPassword(auth, email, pass);
+  localStorage.setItem('zienk_auth_user', JSON.stringify(mockUser));
+  window.dispatchEvent(new Event('storage'));
+  return { user: mockUser };
 };
 
-export const signOutUser = () => {
-  if (!auth) throw new Error("Auth not initialized");
-  return firebaseSignOut(auth);
+export const signOutUser = async () => {
+  if (isFirebaseConfigured) return firebaseSignOut(auth);
+  localStorage.removeItem('zienk_auth_user');
+  window.location.reload(); // Hard reload for clean state
 };
 
 export const saveFormToCloud = async (form: Form) => {
-  if (!db || !auth?.currentUser) return;
-  try {
-    const formRef = doc(db, "forms", form.id);
-    const dataToSave = sanitize({
-      ...form,
-      ownerId: auth.currentUser.uid,
-      updatedAt: Date.now()
-    });
-    await setDoc(formRef, dataToSave, { merge: true });
-  } catch (e) {
-    console.error("Cloud save failed:", e);
+  if (isFirebaseConfigured && auth.currentUser) {
+    try {
+      const formRef = doc(db, "forms", form.id);
+      await setDoc(formRef, { ...form, ownerId: auth.currentUser.uid, updatedAt: Date.now() }, { merge: true });
+    } catch (e) { console.error(e); }
+  } else {
+    const forms = getLocalData('forms');
+    const idx = forms.findIndex((f: any) => f.id === form.id);
+    const updatedForm = { ...form, ownerId: mockUser.uid, updatedAt: Date.now() };
+    if (idx >= 0) forms[idx] = updatedForm;
+    else forms.push(updatedForm);
+    setLocalData('forms', forms);
   }
 };
 
 export const submitResponse = async (response: FormResponse) => {
-  if (!db || !auth?.currentUser) return false;
-  
-  try {
-    const responseRef = doc(db, "responses", response.id);
-    const formRef = doc(db, "forms", response.formId);
+  if (isFirebaseConfigured && auth.currentUser) {
+    try {
+      const responseRef = doc(db, "responses", response.id);
+      const formRef = doc(db, "forms", response.formId);
+      await setDoc(responseRef, { ...response, respondentUid: auth.currentUser.uid });
+      await updateDoc(formRef, { responsesCount: increment(1) });
+      return true;
+    } catch (e) { return false; }
+  } else {
+    const resps = getLocalData('responses');
+    resps.push({ ...response, respondentUid: mockUser.uid });
+    setLocalData('responses', resps);
     
-    const dataToSave = sanitize({
-      ...response,
-      respondentUid: auth.currentUser.uid,
-      respondentEmail: auth.currentUser.email
-    });
-    
-    await setDoc(responseRef, dataToSave);
-    await updateDoc(formRef, { responsesCount: increment(1) });
+    const forms = getLocalData('forms');
+    const fIdx = forms.findIndex((f: any) => f.id === response.formId);
+    if (fIdx >= 0) {
+      forms[fIdx].responsesCount = (forms[fIdx].responsesCount || 0) + 1;
+      setLocalData('forms', forms);
+    }
     return true;
-  } catch (e) {
-    console.error("Submission failed:", e);
-    return false;
   }
 };
 
 export const fetchFormById = async (id: string): Promise<Form | null> => {
-  if (!db) return null;
-  try {
-    const formRef = doc(db, "forms", id);
-    const snap = await getDoc(formRef);
+  if (isFirebaseConfigured) {
+    const snap = await getDoc(doc(db, "forms", id));
     return snap.exists() ? (snap.data() as Form) : null;
-  } catch (e) {
-    return null;
   }
+  return getLocalData('forms').find((f: any) => f.id === id) || null;
 };
 
 export const subscribeToMyForms = (userId: string, callback: (forms: Form[]) => void) => {
-  if (!db) return () => {};
-  const formsCollection = collection(db, "forms");
-  const q = query(formsCollection, where("ownerId", "==", userId));
-  return onSnapshot(q, (snapshot) => {
-    const forms = snapshot.docs.map(doc => doc.data() as Form);
-    callback(forms.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)));
-  });
+  if (isFirebaseConfigured) {
+    const q = query(collection(db, "forms"), where("ownerId", "==", userId));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(doc => doc.data() as Form).sort((a, b) => b.createdAt - a.createdAt));
+    });
+  }
+  const forms = getLocalData('forms').filter((f: any) => f.ownerId === userId);
+  callback(forms.sort((a: any, b: any) => b.createdAt - a.createdAt));
+  return () => {};
 };
 
 export const subscribeToAllMyResponses = (userId: string, callback: (responses: any[]) => void) => {
-  if (!db) return () => {};
-  const responsesCollection = collection(db, "responses");
-  const q = query(responsesCollection, where("respondentUid", "==", userId));
-  return onSnapshot(q, (snapshot) => {
-    callback(snapshot.docs.map(doc => doc.data()).sort((a: any, b: any) => (b.submittedAt || 0) - (a.submittedAt || 0)));
-  });
+  if (isFirebaseConfigured) {
+    const q = query(collection(db, "responses"), where("respondentUid", "==", userId));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(doc => doc.data()).sort((a: any, b: any) => b.submittedAt - a.submittedAt));
+    });
+  }
+  const resps = getLocalData('responses').filter((r: any) => r.respondentUid === userId);
+  callback(resps.sort((a: any, b: any) => b.submittedAt - a.submittedAt));
+  return () => {};
 };

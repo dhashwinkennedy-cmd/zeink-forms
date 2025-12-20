@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, Loader2, AlertCircle, ShieldCheck, ExternalLink, Settings } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle, ShieldCheck, ExternalLink, Zap } from 'lucide-react';
 import { signInUser, signUpUser, isFirebaseConfigured } from '../services/firebase.ts';
 
 export const Auth: React.FC = () => {
@@ -12,7 +11,6 @@ export const Auth: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFirebaseConfigured) return;
     setError(null);
     setLoading(true);
     try {
@@ -21,8 +19,12 @@ export const Auth: React.FC = () => {
       } else {
         await signUpUser(email, password);
       }
+      // If mock, we might need a manual state update or rely on the reload/event
+      if (!isFirebaseConfigured) {
+        window.location.reload(); 
+      }
     } catch (err: any) {
-      let friendlyMessage = err.message.replace('Firebase: ', '');
+      let friendlyMessage = err.message?.replace('Firebase: ', '') || "An error occurred.";
       switch (err.code) {
         case 'auth/invalid-credential':
           friendlyMessage = "Incorrect email or password.";
@@ -40,14 +42,29 @@ export const Auth: React.FC = () => {
     }
   };
 
-  const isNotAllowedError = error?.code === 'auth/operation-not-allowed';
+  const handleDemoMode = async () => {
+    setLoading(true);
+    await signInUser('demo@zienk.io', 'demo123');
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-[#FEECEC] flex items-center justify-center p-4 sm:p-6 selection:bg-[#ff1a1a] selection:text-white">
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {!isFirebaseConfigured && (
+          <div className="mb-6 bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center gap-4 shadow-sm animate-pulse">
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-amber-700 tracking-widest">Preview Mode Active</p>
+              <p className="text-[11px] text-amber-600 font-bold leading-tight">Firebase keys missing. Data will save to your browser locally.</p>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-[2rem] sm:rounded-[3.5rem] shadow-xl overflow-hidden border border-white">
           <div className="p-8 sm:p-12 text-center">
-            {/* Logo */}
             <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#ff1a1a] rounded-2xl sm:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-red-200 mx-auto mb-6 sm:mb-10 group hover:scale-110 transition-transform cursor-default">
               <span className="text-white font-black text-2xl sm:text-4xl italic">Z</span>
             </div>
@@ -59,58 +76,40 @@ export const Auth: React.FC = () => {
               Zienk Forms Engine
             </p>
 
-            {isNotAllowedError ? (
-              <div className="bg-red-50 p-6 sm:p-8 rounded-2xl sm:rounded-[2rem] border-2 border-red-100 text-left mb-6 sm:mb-8">
-                <div className="flex items-center gap-3 mb-4 text-[#ff1a1a]">
-                  <Settings className="w-5 h-5 animate-spin-slow" />
-                  <h3 className="font-black text-[10px] uppercase tracking-widest">Setup Required</h3>
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="relative group">
+                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#ff1a1a] transition-colors" />
+                  <input 
+                    type="email"
+                    required
+                    placeholder="Email address"
+                    className="w-full pl-12 pr-5 py-4 sm:py-5 bg-gray-50 rounded-xl sm:rounded-2xl outline-none border-2 border-transparent focus:border-[#ff1a1a]/10 focus:bg-white transition-all font-bold text-sm text-[#0a0b10]"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
-                <p className="text-[11px] text-[#0a0b10] font-bold leading-relaxed mb-6">
-                  Email authentication is disabled in Firebase. Enable it under <b>Authentication > Sign-in method</b>.
-                </p>
-                <a 
-                  href="https://console.firebase.google.com/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3 sm:py-4 bg-[#0a0b10] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all"
-                >
-                  Firebase Console <ExternalLink className="w-3 h-3" />
-                </a>
+                <div className="relative group">
+                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#ff1a1a] transition-colors" />
+                  <input 
+                    type="password"
+                    required
+                    placeholder="Password"
+                    className="w-full pl-12 pr-5 py-4 sm:py-5 bg-gray-50 rounded-xl sm:rounded-2xl outline-none border-2 border-transparent focus:border-[#ff1a1a]/10 focus:bg-white transition-all font-bold text-sm text-[#0a0b10]"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="relative group">
-                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#ff1a1a] transition-colors" />
-                    <input 
-                      type="email"
-                      required
-                      placeholder="Email address"
-                      className="w-full pl-12 pr-5 py-4 sm:py-5 bg-gray-50 rounded-xl sm:rounded-2xl outline-none border-2 border-transparent focus:border-[#ff1a1a]/10 focus:bg-white transition-all font-bold text-sm text-[#0a0b10]"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="relative group">
-                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#ff1a1a] transition-colors" />
-                    <input 
-                      type="password"
-                      required
-                      placeholder="Password"
-                      className="w-full pl-12 pr-5 py-4 sm:py-5 bg-gray-50 rounded-xl sm:rounded-2xl outline-none border-2 border-transparent focus:border-[#ff1a1a]/10 focus:bg-white transition-all font-bold text-sm text-[#0a0b10]"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
+
+              {error && (
+                <div className="flex items-start gap-3 px-4 py-3 bg-red-50 rounded-xl text-red-500 text-[10px] font-bold">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="text-left leading-tight">{error.message}</span>
                 </div>
+              )}
 
-                {error && (
-                  <div className="flex items-start gap-3 px-4 py-3 bg-red-50 rounded-xl text-red-500 text-[10px] font-bold">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span className="text-left leading-tight">{error.message}</span>
-                  </div>
-                )}
-
+              <div className="flex flex-col gap-3">
                 <button 
                   type="submit"
                   disabled={loading}
@@ -123,8 +122,18 @@ export const Auth: React.FC = () => {
                     </>
                   )}
                 </button>
-              </form>
-            )}
+
+                {!isFirebaseConfigured && (
+                  <button 
+                    type="button"
+                    onClick={handleDemoMode}
+                    className="w-full py-4 bg-[#0a0b10] text-white rounded-xl sm:rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-gray-200 hover:bg-black transition-all flex items-center justify-center gap-2"
+                  >
+                    Launch Demo Architect <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </form>
 
             <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-50">
               <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
