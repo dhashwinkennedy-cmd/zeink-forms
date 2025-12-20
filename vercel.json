@@ -1,7 +1,9 @@
+
 {
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.(?:tsx|ts|js|css|json|png|jpg|jpeg|svg|webp|ico)$).*)",
       "destination": "/index.html"
     }
   ]
