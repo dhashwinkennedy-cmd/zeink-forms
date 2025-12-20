@@ -1,5 +1,5 @@
 
-import { initializeApp, FirebaseApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
@@ -10,16 +10,14 @@ import {
   where, 
   onSnapshot,
   increment,
-  updateDoc,
-  Firestore
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signOut as firebaseSignOut,
-  Auth
+  signOut as firebaseSignOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { Form, FormResponse } from "../types.ts";
 
@@ -35,9 +33,9 @@ const firebaseConfig = {
 // Guard against missing configuration
 export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
-let app: FirebaseApp | undefined;
-let db: Firestore | undefined;
-let auth: Auth | undefined;
+let app: any;
+let db: any;
+let auth: any;
 
 if (isFirebaseConfigured) {
   try {

@@ -9,10 +9,10 @@ import { Auth } from './components/Auth.tsx';
 import { Form, FormResponse } from './types.ts';
 import { Plus, X, Loader2, FileText, Settings, ShieldAlert, ExternalLink, Info } from 'lucide-react';
 import { auth, saveFormToCloud, subscribeToMyForms, fetchFormById, subscribeToAllMyResponses, signOutUser, isFirebaseConfigured } from './services/firebase.ts';
-import { onAuthStateChanged, User } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [view, setView] = useState<'dashboard' | 'editor' | 'responder' | 'details'>('dashboard');
   const [forms, setForms] = useState<Form[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
@@ -37,7 +37,7 @@ const App: React.FC = () => {
   const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
+    if (!isFirebaseConfigured || !auth) {
       setIsLoading(false);
       return;
     }
@@ -45,7 +45,7 @@ const App: React.FC = () => {
     let unsubscribeForms: (() => void) | undefined;
     let unsubscribeResponses: (() => void) | undefined;
 
-    const unsubscribeAuth = onAuthStateChanged(auth!, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user: any) => {
       setCurrentUser(user);
       if (user) {
         unsubscribeForms = subscribeToMyForms(user.uid, (cloudForms) => {
