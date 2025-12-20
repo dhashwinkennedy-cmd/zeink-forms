@@ -3,73 +3,36 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const evaluateLongText = async (question: string, answer: string, prompt?: string) => {
+/**
+ * Evaluates a long text response using Gemini AI based on a provided rubric.
+ * Returns a structured object with marks, reasoning, and a quality tag.
+ */
+export const evaluateLongText = async (question: string, answer: string, rubric: string = "Be fair and constructive.") => {
+  if (!process.env.API_KEY) return { marks: 5, reason: "AI disabled (No API Key)", tag: "NEUTRAL" };
+
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // High quality for grading
-      contents: `
-        Evaluate the following answer for the question: "${question}".
-        ${prompt ? `Context/Rubric: ${prompt}` : ''}
-        Answer: "${answer}"
-        
-        Provide a structured evaluation:
-        1. marks: A number from 0 to 10.
-        2. reason: A concise, constructive critique of the answer.
-        3. tag: Exactly one of ["Highly Relevant", "Partially Relevant", "Plagiarism Warning", "Lacks Detail", "Off Topic"].
-      `,
+      model: 'gemini-3-flash-preview',
+      contents: `Question: ${question}\nUser Answer: ${answer}\nGrading Rubric: ${rubric}`,
       config: {
+        systemInstruction: "You are a professional grader. Evaluate the answer based on the rubric. Return JSON only.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            marks: { type: Type.NUMBER, description: "Numeric score from 0-10" },
-            reason: { type: Type.STRING, description: "Short justification" },
-            tag: { type: Type.STRING, description: "Category tag" }
+            marks: { type: Type.NUMBER, description: "Score out of 10" },
+            reason: { type: Type.STRING, description: "Constructive feedback" },
+            tag: { type: Type.STRING, description: "One word tag describing the quality: EXCELLENT, GOOD, POOR, etc." }
           },
           required: ["marks", "reason", "tag"]
         }
       }
     });
-
-    const result = JSON.parse(response.text || '{}');
-    return {
-      marks: result.marks ?? 0,
-      reason: result.reason ?? "Automated evaluation completed.",
-      tag: result.tag ?? "Analyzed"
-    };
-  } catch (error) {
-    console.error("Gemini Evaluation Failed:", error);
-    return {
-      marks: 0,
-      reason: "Could not complete AI evaluation at this time.",
-      tag: "Error"
-    };
-  }
-};
-
-export const evaluateSemanticMatch = async (expected: string[], actual: string) => {
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `
-        Compare the user's answer: "${actual}" with these target answers: ${expected.join(', ')}.
-        Is it a semantic match?
-      `,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isMatch: { type: Type.BOOLEAN },
-            reason: { type: Type.STRING }
-          },
-          required: ["isMatch", "reason"]
-        }
-      }
-    });
-
-    return JSON.parse(response.text || '{"isMatch": false, "reason": "Error"}');
-  } catch (error) {
-    return { isMatch: false, reason: "API Error" };
+    // Extracting generated text directly from response.text property
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (e) {
+    console.error(e);
+    return { marks: 0, reason: "Evaluation failed.", tag: "ERROR" };
   }
 };

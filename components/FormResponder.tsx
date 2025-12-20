@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronLeft, Send, CheckCircle, Loader2, Clock, Mail, Phone, Check, Lock, Sparkles, BrainCircuit } from 'lucide-react';
 import { Form, Answer, FormResponse, Field } from '../types.ts';
@@ -59,13 +60,11 @@ export const FormResponder: React.FC<FormResponderProps> = ({ form, userResponse
     setIsSubmitting(true);
     
     const updatedAnswers = [...answers];
-    const aiFields = updatedAnswers.filter(a => {
-      const f = findFieldById(a.fieldId);
-      return f && (f.type === 'LONG_TEXT' || f.type === 'ONE_LINE' || f.type === 'TEXT') && f.aiSettings?.mode !== 'NONE';
-    });
 
+    // Evaluate AI-enabled responses before finalizing
     for (let i = 0; i < updatedAnswers.length; i++) {
       const field = findFieldById(updatedAnswers[i].fieldId);
+      // Ensure field types match the expected AI-gradable categories
       if (field && (field.type === 'LONG_TEXT' || field.type === 'ONE_LINE' || field.type === 'TEXT') && field.aiSettings?.mode !== 'NONE') {
         setAiStatus(`Analyzing Response: "${field.label.substring(0, 20)}..."`);
         const evalResult = await evaluateLongText(field.label, updatedAnswers[i].value, field.aiSettings?.prompt);
@@ -100,7 +99,8 @@ export const FormResponder: React.FC<FormResponderProps> = ({ form, userResponse
         <h2 className="text-2xl sm:text-3xl font-black text-[#0a0b10] mb-4">Done!</h2>
         <p className="text-gray-400 font-bold mb-8 text-sm sm:text-base">Your response has been securely recorded.</p>
         
-        {form.settings.results.showAfterSubmission && (
+        {/* Safely access results settings if they exist */}
+        {form.settings?.results?.showAfterSubmission && (
           <div className="bg-[#F8F9FA] p-8 rounded-3xl border border-gray-100 mb-8 w-full max-w-xs">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Score</p>
             <p className="text-4xl sm:text-5xl font-black text-[#ff1a1a]">{finalScore}</p>
