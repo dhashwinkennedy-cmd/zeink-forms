@@ -97,9 +97,9 @@ const Dashboard: React.FC = () => {
   }, [forms, searchQuery, filterStatus, sortBy]);
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-6 max-w-[95%] mx-auto">
-      {/* Dashboard Main Area */}
-      <div className="bg-white rounded-[48px] shadow-2xl shadow-primary/5 border border-gray-100 overflow-hidden min-h-[750px] flex flex-col">
+    <div className="min-h-screen pt-24 pb-12 px-6 max-w-[98%] mx-auto">
+      {/* Dashboard Main Area - Widened to 98% for a prominent evaluation field */}
+      <div className="bg-white rounded-[48px] shadow-2xl shadow-primary/10 border border-gray-100 overflow-hidden min-h-[750px] flex flex-col">
         {/* Header Row */}
         <div className="px-10 pt-10 pb-6 flex items-center justify-between border-b border-gray-50">
           <div className="flex items-center gap-10">
@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Search & Action Bar */}
-        <div className="px-10 py-8 bg-accent/30 border-b border-gray-100">
+        <div className="px-10 py-8 bg-accent/20 border-b border-gray-100">
           <div className="flex items-center gap-4 w-full">
             <div className="relative flex-1 group max-w-2xl">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" size={20} />
@@ -146,23 +146,24 @@ const Dashboard: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search through secure forms..." 
-                className="pl-14 pr-6 py-4 bg-accent/30 border-2 border-transparent rounded-[24px] text-base focus:outline-none focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all w-full shadow-sm placeholder:text-gray-400"
+                className="pl-14 pr-6 py-4 bg-accent border-2 border-transparent rounded-[24px] text-base focus:outline-none focus:border-primary focus:ring-8 focus:ring-primary/5 transition-all w-full shadow-sm placeholder:text-gray-500 font-medium"
               />
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Filter Dropdown */}
+              {/* Filter Button */}
               <div className="relative">
                 <button 
                   onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
-                  className={`p-4 rounded-[20px] transition-all shrink-0 shadow-sm flex items-center gap-2 border ${filterStatus !== 'ALL' ? 'bg-primary text-white border-primary' : 'bg-white text-gray-500 border-gray-200 hover:text-primary hover:border-primary'}`}
+                  className={`p-4 rounded-[20px] transition-all shrink-0 shadow-sm flex items-center gap-2 border-2 ${filterStatus !== 'ALL' ? 'bg-primary text-white border-primary' : 'bg-white text-gray-500 border-gray-100 hover:text-primary hover:border-primary'}`}
                 >
                   <Filter size={20} />
                   <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Filter</span>
                   <ChevronDown size={14} className={showFilterMenu ? 'rotate-180 transition-transform' : 'transition-transform'} />
                 </button>
                 {showFilterMenu && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="px-4 py-2 text-[10px] font-black text-gray-300 uppercase tracking-widest">Select Status</p>
                     {(['ALL', FormStatus.LIVE, FormStatus.DRAFT, FormStatus.PAUSED, FormStatus.EXPIRED] as FilterOption[]).map(status => (
                       <button 
                         key={status}
@@ -177,37 +178,38 @@ const Dashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* Sort Dropdown */}
+              {/* Sort Button - Functional implementation */}
               <div className="relative">
                 <button 
                   onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
-                  className="p-4 bg-white border border-gray-200 rounded-[20px] text-gray-500 hover:text-primary hover:border-primary transition-all shrink-0 shadow-sm flex items-center gap-2"
+                  className="p-4 bg-white border-2 border-gray-100 rounded-[20px] text-gray-500 hover:text-primary hover:border-primary transition-all shrink-0 shadow-sm flex items-center gap-2"
                 >
                   <ArrowDownWideNarrow size={20} />
-                  <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Sort</span>
+                  <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">Sort By</span>
                   <ChevronDown size={14} className={showSortMenu ? 'rotate-180 transition-transform' : 'transition-transform'} />
                 </button>
                 {showSortMenu && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="px-4 py-2 text-[10px] font-black text-gray-300 uppercase tracking-widest">Order Records</p>
                     <button 
                       onClick={() => { setSortBy('date'); setShowSortMenu(false); }}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent text-sm font-bold text-secondary transition-colors"
                     >
-                      Recent First
+                      Creation Date
                       {sortBy === 'date' && <Check size={16} className="text-primary" />}
                     </button>
                     <button 
                       onClick={() => { setSortBy('responses'); setShowSortMenu(false); }}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent text-sm font-bold text-secondary transition-colors"
                     >
-                      Most Responses
+                      Response Volume
                       {sortBy === 'responses' && <Check size={16} className="text-primary" />}
                     </button>
                     <button 
                       onClick={() => { setSortBy('title'); setShowSortMenu(false); }}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent text-sm font-bold text-secondary transition-colors"
                     >
-                      Alphabetical
+                      Alphanumeric
                       {sortBy === 'title' && <Check size={16} className="text-primary" />}
                     </button>
                   </div>
@@ -218,11 +220,11 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar bg-white">
+        <div className="flex-1 p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 overflow-y-auto custom-scrollbar bg-white">
           {isLoading ? (
-            <div className="col-span-full flex flex-col items-center justify-center py-20">
-              <Loader2 className="animate-spin text-primary mb-6" size={48} />
-              <p className="text-gray-500 font-bold uppercase tracking-[4px] text-xs">Accessing Encrypted Records...</p>
+            <div className="col-span-full flex flex-col items-center justify-center py-24">
+              <Loader2 className="animate-spin text-primary mb-6" size={56} />
+              <p className="text-gray-400 font-black uppercase tracking-[6px] text-[10px]">Accessing Encrypted Records...</p>
             </div>
           ) : activeTab === 'my-forms' ? (
             filteredAndSortedForms.length > 0 ? (
@@ -231,8 +233,8 @@ const Dashboard: React.FC = () => {
               ))
             ) : (
               <EmptyState 
-                title={searchQuery || filterStatus !== 'ALL' ? "No matches found" : "No active forms found"} 
-                subtitle={searchQuery || filterStatus !== 'ALL' ? "Try adjusting your search or filters." : "Begin your offensive security evaluation by creating a new form."} 
+                title={searchQuery || filterStatus !== 'ALL' ? "Zero Matches" : "No active forms found"} 
+                subtitle={searchQuery || filterStatus !== 'ALL' ? "Adjust your search parameters or reset filters." : "Begin your offensive security evaluation by creating a new form."} 
               />
             )
           ) : (
@@ -305,7 +307,7 @@ const Dashboard: React.FC = () => {
                   value={respondInput}
                   onChange={(e) => setRespondInput(e.target.value)}
                   placeholder="ID or Secure URI..."
-                  className="w-full pl-14 pr-6 py-5 bg-accent/30 border-2 border-transparent focus:border-primary rounded-[24px] text-secondary focus:outline-none transition-all font-bold text-lg placeholder:text-gray-300"
+                  className="w-full pl-14 pr-6 py-5 bg-accent/30 border-2 border-transparent focus:border-primary rounded-[24px] text-secondary focus:outline-none transition-all font-bold text-lg placeholder:text-gray-400"
                 />
               </div>
 
