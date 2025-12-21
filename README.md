@@ -1,34 +1,20 @@
-# 🔴 Zienk Forms Engine
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-A high-performance, AI-integrated form builder inspired by Typeform and Google Forms. Built with React, Tailwind CSS, Firebase, and Google Gemini.
+# Run and deploy your AI Studio app
 
-## 🚀 Quick Start
+This contains everything you need to run your app locally.
 
-1. **Clone the project**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/zienk-forms.git
-   ```
+View your app in AI Studio: https://ai.studio/apps/drive/1TlrndiS5VqPDIdcn7_Qamk6YNp8MpVOo
 
-2. **Setup Environment Variables**
-   Create a `.env` file or add these to your deployment platform (Vercel/Netlify):
-   - `API_KEY`: Your Google Gemini API Key
-   - `FIREBASE_API_KEY`: Your Firebase API Key
-   - `FIREBASE_PROJECT_ID`: Your Firebase Project ID
-   - (And other Firebase variables as seen in `services/firebase.ts`)
+## Run Locally
 
-3. **Run the app**
-   Since this app uses ESM modules, you can serve it using any local server:
-   ```bash
-   npx serve .
-   ```
+**Prerequisites:**  Node.js
 
-## 🛠 Features
-- **AI Evaluation**: Automatic grading of long-text answers using Gemini 3 Pro.
-- **Smart Logic**: Conditional redirection and page-based navigation.
-- **Cloud Sync**: Real-time saving and response tracking via Firebase.
-- **Mobile First**: Fully responsive design for creation and responding.
 
-## 📦 Project Structure
-- `/components`: UI units (Auth, Dashboard, Editors).
-- `/services`: API integrations (Firebase, Gemini, OTP).
-- `types.ts`: Global TypeScript definitions.
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

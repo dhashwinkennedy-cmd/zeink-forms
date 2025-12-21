@@ -1,7 +1,9 @@
+
 {
   "name": "Zienk Forms",
-  "description": "A secure, cloud-based form manager with advanced MCQ logic, AI-powered evaluations, and conditional redirection.",
+  "description": "A simple and secure AI-powered form tool.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }
