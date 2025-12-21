@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-6 max-w-[98%] mx-auto">
-      {/* Dashboard Main Area - Widened to 98% for a prominent evaluation field */}
+      {/* Dashboard Main Area */}
       <div className="bg-white rounded-[48px] shadow-2xl shadow-primary/10 border border-gray-100 overflow-hidden min-h-[750px] flex flex-col">
         {/* Header Row */}
         <div className="px-10 pt-10 pb-6 flex items-center justify-between border-b border-gray-50">
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* Sort Button - Functional implementation */}
+              {/* Sort Button */}
               <div className="relative">
                 <button 
                   onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
@@ -243,7 +243,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals (Create and Respond) remain identical */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-secondary/80 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[40px] overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl border border-white/20">
