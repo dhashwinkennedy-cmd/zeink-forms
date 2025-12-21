@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const evaluateShortAnswer = async (question: string, userAnswer: string, correctAnswer: string) => {
@@ -25,7 +26,11 @@ export const evaluateShortAnswer = async (question: string, userAnswer: string, 
     }
   });
 
-  return JSON.parse(response.text.trim());
+  // Extracting text output directly from the .text property as per SDK rules
+  const text = response.text;
+  if (!text) throw new Error("AI returned empty response");
+  
+  return JSON.parse(text.trim());
 };
 
 export const evaluateLongAnswer = async (
@@ -62,5 +67,8 @@ export const evaluateLongAnswer = async (
     }
   });
 
-  return JSON.parse(response.text.trim());
+  const text = response.text;
+  if (!text) throw new Error("AI returned empty response");
+
+  return JSON.parse(text.trim());
 };

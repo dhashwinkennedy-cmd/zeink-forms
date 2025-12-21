@@ -1,3 +1,4 @@
+
 {
   "name": "zienk-forms",
   "private": true,
@@ -9,7 +10,7 @@
     "firebase": "^11.4.0",
     "lucide-react": "^0.475.0",
     "zustand": "^5.0.3",
-    "@google/genai": "^0.2.1"
+    "@google/genai": "^0.21.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
