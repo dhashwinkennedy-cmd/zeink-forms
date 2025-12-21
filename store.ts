@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { Form, Block, BlockType, FormStatus, MCQOption } from './types';
 import { db } from './services/firebase';
@@ -40,6 +39,7 @@ export const useStore = create<ZienkState>((set, get) => ({
   isLoading: false,
 
   fetchForms: async () => {
+    if (!db) return;
     set({ isLoading: true });
     try {
       const q = query(collection(db, "forms"), orderBy("createdAt", "desc"));
@@ -54,13 +54,12 @@ export const useStore = create<ZienkState>((set, get) => ({
 
   saveCurrentForm: async () => {
     const { currentForm } = get();
-    if (!currentForm) return;
+    if (!currentForm || !db) return;
     
     set({ isLoading: true });
     try {
       await setDoc(doc(db, "forms", currentForm.id), currentForm);
       set({ isLoading: false });
-      // Refresh list
       get().fetchForms();
     } catch (error) {
       console.error("Error saving form:", error);
@@ -70,6 +69,7 @@ export const useStore = create<ZienkState>((set, get) => ({
   },
 
   deleteForm: async (formId) => {
+    if (!db) return;
     try {
       await deleteDoc(doc(db, "forms", formId));
       set(state => ({ forms: state.forms.filter(f => f.id !== formId) }));
