@@ -1,11 +1,7 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Use process.env.API_KEY exclusively and directly in the constructor as per guidelines.
-// Always create a new instance before making an API call to ensure the latest configuration.
-
 export const evaluateShortAnswer = async (question: string, userAnswer: string, correctAnswer: string) => {
-  // Initialize the AI client directly with the environment variable as per hard requirement
+  // Always create a new instance with the latest API_KEY from the environment
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const response = await ai.models.generateContent({
@@ -29,7 +25,6 @@ export const evaluateShortAnswer = async (question: string, userAnswer: string, 
     }
   });
 
-  // Extract text property directly as per guidelines (not a method call)
   return JSON.parse(response.text.trim());
 };
 
@@ -39,7 +34,6 @@ export const evaluateLongAnswer = async (
   mode: 'context' | 'prompt' | 'tagging',
   gradingRubric?: string
 ) => {
-  // Initialize the AI client directly with the environment variable
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = mode === 'prompt' 
@@ -50,7 +44,6 @@ export const evaluateLongAnswer = async (
     model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
-      // Use thinking configuration for complex reasoning/grading tasks with Gemini 3 Pro
       thinkingConfig: { thinkingBudget: 32768 },
       responseMimeType: "application/json",
       responseSchema: {
@@ -69,6 +62,5 @@ export const evaluateLongAnswer = async (
     }
   });
 
-  // Extract text property directly as per guidelines (not a method call)
   return JSON.parse(response.text.trim());
 };

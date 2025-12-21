@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, Wallet, LogOut, RefreshCcw, ShieldCheck } from 'lucide-react';
 
@@ -6,7 +5,7 @@ const Navbar: React.FC = () => {
   const [showOverlay, setShowOverlay] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between z-50">
+    <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between z-50">
       <div className="flex items-center gap-3">
         <div className="bg-primary p-1.5 rounded-lg">
           <ShieldCheck className="w-6 h-6 text-white" />
@@ -17,7 +16,7 @@ const Navbar: React.FC = () => {
       <div className="relative">
         <button 
           onClick={() => setShowOverlay(!showOverlay)}
-          className="w-10 h-10 rounded-full bg-accent flex items-center justify-center border border-gray-200 hover:border-primary transition-colors overflow-hidden"
+          className="w-10 h-10 rounded-full bg-[#FFF5F5] flex items-center justify-center border border-gray-200 hover:border-primary transition-colors overflow-hidden"
         >
           <img src="https://picsum.photos/seed/user/100" alt="Avatar" className="w-full h-full object-cover" />
         </button>
@@ -41,7 +40,7 @@ const Navbar: React.FC = () => {
 };
 
 const OverlayItem = ({ icon, label, badge, className = "" }: { icon: React.ReactNode, label: string, badge?: string, className?: string }) => (
-  <button className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-accent transition-colors text-secondary text-sm ${className}`}>
+  <button className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#FFF5F5] transition-colors text-secondary text-sm ${className}`}>
     <div className="flex items-center gap-3">
       {icon}
       <span>{label}</span>
