@@ -16,19 +16,21 @@ export default function App() {
   const [forms, setForms] = useState<Form[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
   const [isInitializing, setIsInitializing] = useState(true);
-  const initTimeoutRef = useRef<any>(null);
+  const initializationTriggered = useRef(false);
 
   const finishInitialization = useCallback(() => {
-    if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
+    if (initializationTriggered.current) return;
+    initializationTriggered.current = true;
+    console.log("App: Engine synchronized.");
     setIsInitializing(false);
   }, []);
 
   useEffect(() => {
-    // Safety Timeout: If Firebase or Mock Auth takes more than 3 seconds to report state, force enter app
-    initTimeoutRef.current = setTimeout(() => {
-      console.warn("App: Initialization safety trigger fired.");
+    // Safety Timeout: Force-enter the application if Auth doesn't resolve in 2.5s
+    const safetyTimer = setTimeout(() => {
+      console.warn("App: Initialization safety trigger fired (2.5s timeout).");
       finishInitialization();
-    }, 3000);
+    }, 2500);
 
     let unsubscribeAuth: any;
     try {
@@ -38,17 +40,17 @@ export default function App() {
           finishInitialization();
         });
       } else {
-        console.error("App: Auth module invalid.");
+        console.error("App: Auth module not found or invalid.");
         finishInitialization();
       }
     } catch (error) {
-      console.error("App: Auth error:", error);
+      console.error("App: Auth initialization error:", error);
       finishInitialization();
     }
 
     return () => {
       if (unsubscribeAuth) unsubscribeAuth();
-      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
+      clearTimeout(safetyTimer);
     };
   }, [finishInitialization]);
 
