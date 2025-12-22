@@ -42,16 +42,18 @@
       }
     </style>
     <script>
-      // Initialize a reliable global process object BEFORE modules load
       window.process = window.process || {};
       window.process.env = window.process.env || {};
       
-      // Default fallback values to prevent undefined access crashes
       const envDefaults = {
         NODE_ENV: 'production',
         API_KEY: '',
         FIREBASE_API_KEY: '',
-        FIREBASE_PROJECT_ID: ''
+        FIREBASE_PROJECT_ID: '',
+        FIREBASE_AUTH_DOMAIN: '',
+        FIREBASE_STORAGE_BUCKET: '',
+        FIREBASE_MESSAGING_SENDER_ID: '',
+        FIREBASE_APP_ID: ''
       };
 
       Object.keys(envDefaults).forEach(key => {

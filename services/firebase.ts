@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore, 
   collection, 
@@ -37,7 +37,7 @@ let authInstance: any;
 
 if (isFirebaseConfigured) {
   try {
-    app = initializeApp(firebaseConfig);
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
     authInstance = getAuth(app);
   } catch (e) {
@@ -60,8 +60,10 @@ const mockAuth = {
     return JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
   },
   onAuthStateChanged: (callback: any) => {
+    // Immediate callback for mock mode
     const user = JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
-    callback(user);
+    setTimeout(() => callback(user), 0);
+    
     const listener = (e: StorageEvent) => {
       if (e.key === 'zienk_auth_user') {
         callback(JSON.parse(e.newValue || 'null'));
@@ -69,10 +71,14 @@ const mockAuth = {
     };
     window.addEventListener('storage', listener);
     return () => window.removeEventListener('storage', listener);
+  },
+  signOut: async () => {
+    localStorage.removeItem('zienk_auth_user');
+    window.dispatchEvent(new Event('storage'));
   }
 };
 
-// Ensure auth is never undefined by falling back to mockAuth
+// Guard authInstance availability
 export const auth = (isFirebaseConfigured && authInstance) ? authInstance : mockAuth;
 
 export const signUpUser = async (email: string, pass: string) => {
@@ -92,7 +98,7 @@ export const signInUser = async (email: string, pass: string) => {
 
 export const signOutUser = async () => {
   if (isFirebaseConfigured && authInstance) return firebaseSignOut(authInstance);
-  localStorage.removeItem('zienk_auth_user');
+  if (auth.signOut) await auth.signOut();
   window.location.reload();
 };
 
@@ -138,8 +144,13 @@ export const submitResponse = async (response: FormResponse) => {
 
 export const fetchFormById = async (id: string): Promise<Form | null> => {
   if (isFirebaseConfigured && db) {
-    const snap = await getDoc(doc(db, "forms", id));
-    return snap.exists() ? (snap.data() as Form) : null;
+    try {
+      const snap = await getDoc(doc(db, "forms", id));
+      return snap.exists() ? (snap.data() as Form) : null;
+    } catch (e) {
+      console.error("Fetch form failed", e);
+      return null;
+    }
   }
   return getLocalData('forms').find((f: any) => f.id === id) || null;
 };
@@ -149,7 +160,7 @@ export const subscribeToMyForms = (userId: string, callback: (forms: Form[]) => 
     const q = query(collection(db, "forms"), where("ownerId", "==", userId));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(doc => doc.data() as Form).sort((a, b) => b.createdAt - a.createdAt));
-    });
+    }, (error) => console.error("Forms sub error", error));
   }
   const forms = getLocalData('forms').filter((f: any) => f.ownerId === userId);
   callback(forms.sort((a: any, b: any) => b.createdAt - a.createdAt));
@@ -161,7 +172,7 @@ export const subscribeToAllMyResponses = (userId: string, callback: (responses: 
     const q = query(collection(db, "responses"), where("respondentUid", "==", userId));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(doc => doc.data()).sort((a: any, b: any) => b.submittedAt - a.submittedAt));
-    });
+    }, (error) => console.error("Responses sub error", error));
   }
   const resps = getLocalData('responses').filter((r: any) => r.respondentUid === userId);
   callback(resps.sort((a: any, b: any) => b.submittedAt - a.submittedAt));

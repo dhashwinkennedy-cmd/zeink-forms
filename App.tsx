@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { auth, subscribeToMyForms, subscribeToAllMyResponses, isFirebaseConfigured, signOutUser } from './services/firebase.ts';
 import { Navbar } from './components/Navbar.tsx';
 import { Auth } from './components/Auth.tsx';
@@ -17,18 +17,18 @@ export default function App() {
   const [responses, setResponses] = useState<any[]>([]);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  const finishInitialization = useCallback(() => {
+    setIsInitializing(false);
+  }, []);
+
   useEffect(() => {
     let unsubscribeAuth: any;
     
-    // GUARANTEED INITIALIZATION: If auth hangs, we proceed after 2.5 seconds
-    const finishInitialization = () => {
-      setIsInitializing(false);
-    };
-
+    // Safety timeout: If auth provider takes too long, we proceed to Auth screen
     const safetyTimeout = setTimeout(() => {
-      console.warn("Auth initialization timed out, proceeding with current state.");
+      console.warn("Auth initialization safety trigger engaged.");
       finishInitialization();
-    }, 2500);
+    }, 3000);
 
     try {
       if (auth && typeof auth.onAuthStateChanged === 'function') {
@@ -38,11 +38,11 @@ export default function App() {
           finishInitialization();
         });
       } else {
-        console.error("Auth module not correctly initialized.");
+        console.error("Auth module initialization failed.");
         finishInitialization();
       }
     } catch (error) {
-      console.error("Auth subscription fatal error:", error);
+      console.error("Auth hook error:", error);
       finishInitialization();
     }
 
@@ -50,7 +50,7 @@ export default function App() {
       if (unsubscribeAuth) unsubscribeAuth();
       clearTimeout(safetyTimeout);
     };
-  }, []);
+  }, [finishInitialization]);
 
   useEffect(() => {
     if (user?.uid) {
@@ -164,7 +164,6 @@ export default function App() {
                    onKeyDown={async (e) => {
                      if (e.key === 'Enter') {
                        const val = (e.target as HTMLInputElement).value;
-                       // Check local forms first for convenience in demo
                        const localForms = JSON.parse(localStorage.getItem('zienk_forms') || '[]');
                        const found = localForms.find((f: any) => f.id === val);
                        if (found) {
