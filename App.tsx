@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { auth, subscribeToMyForms, subscribeToAllMyResponses, isFirebaseConfigured, signOutUser } from './services/firebase.ts';
 import { Navbar } from './components/Navbar.tsx';
@@ -24,7 +23,16 @@ export default function App() {
       setUser(u);
       setIsInitializing(false);
     });
-    return () => unsubscribeAuth();
+
+    // Safety timeout: If initialization takes too long, stop loading (likely local mode)
+    const timeout = setTimeout(() => {
+      if (isInitializing) setIsInitializing(false);
+    }, 3000);
+
+    return () => {
+      unsubscribeAuth();
+      clearTimeout(timeout);
+    };
   }, []);
 
   useEffect(() => {
