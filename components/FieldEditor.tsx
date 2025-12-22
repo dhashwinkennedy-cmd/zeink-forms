@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Trash2, Plus, Check, Info, PlusCircle, Image as ImageIcon, Film, ShieldCheck, Upload, Loader2, X } from 'lucide-react';
+import { Trash2, Plus, Check, Info, PlusCircle, Image as ImageIcon, Film, ShieldCheck, Upload, X } from 'lucide-react';
 import { Field, MCQOption, Media } from '../types.ts';
 
 interface FieldEditorProps {
@@ -109,8 +109,8 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, onUpdate, onDel
                 onClick={() => mediaInputRef.current?.click()} 
                 className="text-[10px] font-black flex items-center gap-1.5 text-gray-500 hover:text-[#ff1a1a] transition-all"
               >
-                {isProcessingMedia === 'field' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} 
-                Add Media
+                <ImageIcon className="w-3.5 h-3.5" /> 
+                {isProcessingMedia === 'field' ? "Uploading..." : "Add Media"}
               </button>
             </div>
           ) : (
@@ -150,7 +150,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, onUpdate, onDel
                       onClick={() => { setActiveOptionId(option.id); optionMediaInputRef.current?.click(); }}
                       className={`p-2 rounded-lg transition-all ${option.media ? 'bg-red-50 text-[#ff1a1a]' : 'text-gray-300 hover:text-[#ff1a1a] hover:bg-red-50'}`}
                     >
-                      {isProcessingMedia === option.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                      <ImageIcon className="w-3.5 h-3.5" />
                     </button>
                     
                     <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm">

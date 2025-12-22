@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronLeft, Send, CheckCircle, Loader2, Clock, Mail, Phone, Check, Lock, Sparkles, BrainCircuit } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Send, CheckCircle, Clock, Mail, Phone, Check, Lock, Sparkles, BrainCircuit } from 'lucide-react';
 import { Form, Answer, FormResponse, Field } from '../types.ts';
 import { submitResponse, auth } from '../services/firebase.ts';
 import { evaluateLongText } from '../services/gemini.ts';
@@ -114,21 +114,6 @@ export const FormResponder: React.FC<FormResponderProps> = ({ form, userResponse
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center py-10 sm:py-20 px-4 sm:px-6">
-      {isSubmitting && (
-        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-white/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative">
-             <div className="w-24 h-24 bg-[#ff1a1a]/10 rounded-full flex items-center justify-center animate-pulse">
-                <BrainCircuit className="w-12 h-12 text-[#ff1a1a] animate-bounce" />
-             </div>
-             <div className="absolute inset-0 border-4 border-[#ff1a1a]/20 border-t-[#ff1a1a] rounded-full animate-spin" />
-          </div>
-          <h3 className="mt-8 text-xl font-black text-[#0a0b10] uppercase tracking-tighter">Evaluation in Progress</h3>
-          <p className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-            <Sparkles className="w-3 h-3" /> {aiStatus}
-          </p>
-        </div>
-      )}
-
       <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
         {/* Progress Bar */}
         <div className="w-full bg-white h-2 sm:h-4 rounded-full overflow-hidden shadow-sm p-0.5 sm:p-1">

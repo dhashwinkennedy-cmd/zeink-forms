@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { signInUser } from '../services/firebase.ts';
-import { Zap, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
+import { Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const Auth = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -32,9 +33,7 @@ export const Auth = () => {
           disabled={isLoggingIn}
           className="w-full py-5 bg-[#ff1a1a] text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-red-100 disabled:opacity-50"
         >
-          {isLoggingIn ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
+          {isLoggingIn ? "Entering Workspace..." : (
             <>Enter Workspace <ArrowRight className="w-4 h-4" /></>
           )}
         </button>

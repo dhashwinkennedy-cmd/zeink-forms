@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Plus, ImageIcon, Type, Mail, Phone, ListChecks, AlignLeft, Layout, ChevronRight, X, Trash2, Check, Info, RotateCcw, Loader2, Menu } from 'lucide-react';
+import { ChevronLeft, Plus, ImageIcon, Type, Mail, Phone, ListChecks, AlignLeft, Layout, ChevronRight, X, Trash2, Check, Info, RotateCcw, Menu } from 'lucide-react';
 import { Form, Field, FieldType, Page } from '../types.ts';
 import { FieldEditor } from './FieldEditor.tsx';
 

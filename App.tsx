@@ -7,7 +7,6 @@ import { FormEditor } from './components/FormEditor.tsx';
 import { FormResponder } from './components/FormResponder.tsx';
 import { FormDetails } from './components/FormDetails.tsx';
 import { Form } from './types.ts';
-import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -15,44 +14,25 @@ export default function App() {
   const [activeForm, setActiveForm] = useState<Form | null>(null);
   const [forms, setForms] = useState<Form[]>([]);
   const [responses, setResponses] = useState<any[]>([]);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const initializationTriggered = useRef(false);
-
-  const finishInitialization = useCallback(() => {
-    if (initializationTriggered.current) return;
-    initializationTriggered.current = true;
-    console.log("App: Engine synchronized.");
-    setIsInitializing(false);
-  }, []);
 
   useEffect(() => {
-    // Safety Timeout: Force-enter the application if Auth doesn't resolve in 2.5s
-    const safetyTimer = setTimeout(() => {
-      console.warn("App: Initialization safety trigger fired (2.5s timeout).");
-      finishInitialization();
-    }, 2500);
-
     let unsubscribeAuth: any;
     try {
       if (auth && typeof auth.onAuthStateChanged === 'function') {
         unsubscribeAuth = auth.onAuthStateChanged((u: any) => {
           setUser(u);
-          finishInitialization();
         });
       } else {
         console.error("App: Auth module not found or invalid.");
-        finishInitialization();
       }
     } catch (error) {
       console.error("App: Auth initialization error:", error);
-      finishInitialization();
     }
 
     return () => {
       if (unsubscribeAuth) unsubscribeAuth();
-      clearTimeout(safetyTimer);
     };
-  }, [finishInitialization]);
+  }, []);
 
   useEffect(() => {
     if (user?.uid) {
@@ -71,18 +51,6 @@ export default function App() {
       setResponses([]);
     }
   }, [user]);
-
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEECEC]">
-        <div className="relative mb-6">
-          <Loader2 className="w-12 h-12 text-[#ff1a1a] animate-spin" />
-          <div className="absolute inset-0 bg-[#ff1a1a]/10 rounded-full animate-ping opacity-20" />
-        </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#ff1a1a] animate-pulse">Synchronizing Engine</span>
-      </div>
-    );
-  }
 
   if (!user) {
     return <Auth />;
