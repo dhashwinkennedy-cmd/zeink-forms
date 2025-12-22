@@ -1,74 +1,85 @@
 
-export enum BlockType {
-  TEXT_MEDIA = 'TEXT_MEDIA',
-  VERIFICATION = 'VERIFICATION',
-  SHORT_TEXT = 'SHORT_TEXT',
-  LONG_TEXT = 'LONG_TEXT',
-  MCQ = 'MCQ',
-  INFO = 'INFO'
-}
+export type FieldType = 'TEXT' | 'EMAIL' | 'PHONE' | 'MCQ' | 'SHORT_TEXT' | 'LONG_TEXT' | 'ONE_LINE';
 
-export enum FormStatus {
-  DRAFT = 'DRAFT',
-  LIVE = 'LIVE',
-  PAUSED = 'PAUSED',
-  EXPIRED = 'EXPIRED'
+export interface Media {
+  type: 'image' | 'video';
+  url: string;
+  title?: string;
 }
 
 export interface MCQOption {
   id: string;
-  text: string;
+  label: string;
   points: number;
-  isCorrect: boolean;
-  mediaUrl?: string;
+  isCorrect?: boolean;
+  isOther?: boolean;
+  media?: Media;
 }
 
-export interface Block {
+export interface Field {
   id: string;
-  type: BlockType;
-  title: string;
-  content: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video';
+  type: FieldType;
+  label: string;
+  subtitle?: string;
   required: boolean;
-  // Verification specific
-  verifyOTP?: boolean;
-  charLimit?: number;
-  // AI Grading
-  aiEnabled: boolean;
-  correctAnswer?: string;
-  gradingPrompt?: string;
-  gradingMode?: 'context' | 'prompt' | 'tagging';
-  // MCQ specific
+  points: number;
   options?: MCQOption[];
+  aiPrompt?: string; // For LONG_TEXT evaluation
+  media?: Media;
   negativeMarking?: boolean;
-  allowOther?: boolean;
-  validationLocked?: boolean;
-  totalPoints?: number;
+  negativeMarkingValue?: number;
+  aiSettings?: {
+    mode: 'NONE' | 'EVALUATE';
+    prompt?: string;
+  };
+}
+
+export interface Page {
+  id: string;
+  title: string;
+  fields: Field[];
+  navigationControl?: {
+    allowRevisiting: boolean;
+  };
+  redirectionLogics?: any[];
 }
 
 export interface Form {
   id: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
+  description: string;
   bannerUrl?: string;
-  status: FormStatus;
-  responseCount: number;
-  expiryDate?: string;
-  blocks: Block[];
-  settings: {
-    allowRevisit: boolean;
-    redirectionRules: { condition: string; targetPage: number }[];
+  pages: Page[];
+  status: 'draft' | 'published';
+  createdAt: number;
+  updatedAt?: number;
+  ownerId: string;
+  responsesCount: number;
+  settings?: {
+    results: {
+      showAfterSubmission: boolean;
+    };
   };
-  createdAt: string;
 }
 
-export interface Submission {
+export interface Answer {
+  fieldId: string;
+  value: any;
+  pointsEarned: number;
+  aiFeedback?: string;
+  aiEvaluation?: {
+    marks: number;
+    reason: string;
+    tag: string;
+  };
+}
+
+export interface FormResponse {
   id: string;
   formId: string;
-  formName: string;
-  score: number;
-  totalPossible: number;
-  submittedAt: string;
-  status: 'graded' | 'pending';
+  respondentUid: string;
+  answers: Answer[];
+  totalScore: number;
+  submittedAt: number;
 }
