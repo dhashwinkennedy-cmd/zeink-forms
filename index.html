@@ -42,11 +42,23 @@
       }
     </style>
     <script>
-      // Initialize a more robust process object for ESM modules
+      // Initialize a reliable global process object BEFORE modules load
       window.process = window.process || {};
       window.process.env = window.process.env || {};
-      window.process.env.API_KEY = window.process.env.API_KEY || "";
-      window.process.env.NODE_ENV = window.process.env.NODE_ENV || "production";
+      
+      // Default fallback values to prevent undefined access crashes
+      const envDefaults = {
+        NODE_ENV: 'production',
+        API_KEY: '',
+        FIREBASE_API_KEY: '',
+        FIREBASE_PROJECT_ID: ''
+      };
+
+      Object.keys(envDefaults).forEach(key => {
+        if (typeof window.process.env[key] === 'undefined') {
+          window.process.env[key] = envDefaults[key];
+        }
+      });
 
       window.onerror = function(msg, url, line) {
         const display = document.getElementById('error-display');
@@ -69,13 +81,13 @@
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client?deps=react@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?external=react",
-    "@google/genai": "https://esm.sh/@google/genai",
     "firebase/app": "https://esm.sh/firebase@11.3.1/app",
     "firebase/auth": "https://esm.sh/firebase@11.3.1/auth",
     "firebase/firestore": "https://esm.sh/firebase@11.3.1/firestore",
-    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
-    "react/": "https://esm.sh/react@19.0.0/",
-    "firebase/": "https://esm.sh/firebase@11.3.1/"
+    "@google/genai": "https://esm.sh/@google/genai",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "firebase/": "https://esm.sh/firebase@^12.7.0/"
   }
 }
 </script>

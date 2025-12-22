@@ -18,20 +18,37 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    // Sync Auth State
-    const unsubscribeAuth = auth.onAuthStateChanged((u: any) => {
-      setUser(u);
+    let unsubscribeAuth: any;
+    
+    // GUARANTEED INITIALIZATION: If auth hangs, we proceed after 2.5 seconds
+    const finishInitialization = () => {
       setIsInitializing(false);
-    });
+    };
 
-    // Safety timeout: If initialization takes too long, stop loading (likely local mode)
-    const timeout = setTimeout(() => {
-      if (isInitializing) setIsInitializing(false);
-    }, 3000);
+    const safetyTimeout = setTimeout(() => {
+      console.warn("Auth initialization timed out, proceeding with current state.");
+      finishInitialization();
+    }, 2500);
+
+    try {
+      if (auth && typeof auth.onAuthStateChanged === 'function') {
+        unsubscribeAuth = auth.onAuthStateChanged((u: any) => {
+          setUser(u);
+          clearTimeout(safetyTimeout);
+          finishInitialization();
+        });
+      } else {
+        console.error("Auth module not correctly initialized.");
+        finishInitialization();
+      }
+    } catch (error) {
+      console.error("Auth subscription fatal error:", error);
+      finishInitialization();
+    }
 
     return () => {
-      unsubscribeAuth();
-      clearTimeout(timeout);
+      if (unsubscribeAuth) unsubscribeAuth();
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
@@ -56,8 +73,11 @@ export default function App() {
   if (isInitializing) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FEECEC]">
-        <Loader2 className="w-10 h-10 text-[#ff1a1a] animate-spin mb-4" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Booting Engine...</span>
+        <div className="relative mb-6">
+          <Loader2 className="w-12 h-12 text-[#ff1a1a] animate-spin" />
+          <div className="absolute inset-0 bg-[#ff1a1a]/10 rounded-full animate-ping opacity-20" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#ff1a1a] animate-pulse">Synchronizing Engine</span>
       </div>
     );
   }

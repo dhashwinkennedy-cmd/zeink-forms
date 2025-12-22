@@ -62,7 +62,6 @@ const mockAuth = {
   onAuthStateChanged: (callback: any) => {
     const user = JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
     callback(user);
-    // Listen for storage changes to sync across tabs if needed
     const listener = (e: StorageEvent) => {
       if (e.key === 'zienk_auth_user') {
         callback(JSON.parse(e.newValue || 'null'));
@@ -73,34 +72,35 @@ const mockAuth = {
   }
 };
 
-export const auth = isFirebaseConfigured ? authInstance : mockAuth;
+// Ensure auth is never undefined by falling back to mockAuth
+export const auth = (isFirebaseConfigured && authInstance) ? authInstance : mockAuth;
 
 export const signUpUser = async (email: string, pass: string) => {
-  if (isFirebaseConfigured) return createUserWithEmailAndPassword(auth, email, pass);
+  if (isFirebaseConfigured && authInstance) return createUserWithEmailAndPassword(authInstance, email, pass);
   const user = { ...mockUser, email };
   localStorage.setItem('zienk_auth_user', JSON.stringify(user));
-  window.dispatchEvent(new Event('storage')); // Trigger local update
+  window.dispatchEvent(new Event('storage'));
   return { user };
 };
 
 export const signInUser = async (email: string, pass: string) => {
-  if (isFirebaseConfigured) return signInWithEmailAndPassword(auth, email, pass);
+  if (isFirebaseConfigured && authInstance) return signInWithEmailAndPassword(authInstance, email, pass);
   localStorage.setItem('zienk_auth_user', JSON.stringify(mockUser));
   window.dispatchEvent(new Event('storage'));
   return { user: mockUser };
 };
 
 export const signOutUser = async () => {
-  if (isFirebaseConfigured) return firebaseSignOut(auth);
+  if (isFirebaseConfigured && authInstance) return firebaseSignOut(authInstance);
   localStorage.removeItem('zienk_auth_user');
-  window.location.reload(); // Hard reload for clean state
+  window.location.reload();
 };
 
 export const saveFormToCloud = async (form: Form) => {
-  if (isFirebaseConfigured && auth.currentUser) {
+  if (isFirebaseConfigured && db && authInstance?.currentUser) {
     try {
       const formRef = doc(db, "forms", form.id);
-      await setDoc(formRef, { ...form, ownerId: auth.currentUser.uid, updatedAt: Date.now() }, { merge: true });
+      await setDoc(formRef, { ...form, ownerId: authInstance.currentUser.uid, updatedAt: Date.now() }, { merge: true });
     } catch (e) { console.error(e); }
   } else {
     const forms = getLocalData('forms');
@@ -113,11 +113,11 @@ export const saveFormToCloud = async (form: Form) => {
 };
 
 export const submitResponse = async (response: FormResponse) => {
-  if (isFirebaseConfigured && auth.currentUser) {
+  if (isFirebaseConfigured && db && authInstance?.currentUser) {
     try {
       const responseRef = doc(db, "responses", response.id);
       const formRef = doc(db, "forms", response.formId);
-      await setDoc(responseRef, { ...response, respondentUid: auth.currentUser.uid });
+      await setDoc(responseRef, { ...response, respondentUid: authInstance.currentUser.uid });
       await updateDoc(formRef, { responsesCount: increment(1) });
       return true;
     } catch (e) { return false; }
@@ -137,7 +137,7 @@ export const submitResponse = async (response: FormResponse) => {
 };
 
 export const fetchFormById = async (id: string): Promise<Form | null> => {
-  if (isFirebaseConfigured) {
+  if (isFirebaseConfigured && db) {
     const snap = await getDoc(doc(db, "forms", id));
     return snap.exists() ? (snap.data() as Form) : null;
   }
@@ -145,7 +145,7 @@ export const fetchFormById = async (id: string): Promise<Form | null> => {
 };
 
 export const subscribeToMyForms = (userId: string, callback: (forms: Form[]) => void) => {
-  if (isFirebaseConfigured) {
+  if (isFirebaseConfigured && db) {
     const q = query(collection(db, "forms"), where("ownerId", "==", userId));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(doc => doc.data() as Form).sort((a, b) => b.createdAt - a.createdAt));
@@ -157,7 +157,7 @@ export const subscribeToMyForms = (userId: string, callback: (forms: Form[]) => 
 };
 
 export const subscribeToAllMyResponses = (userId: string, callback: (responses: any[]) => void) => {
-  if (isFirebaseConfigured) {
+  if (isFirebaseConfigured && db) {
     const q = query(collection(db, "responses"), where("respondentUid", "==", userId));
     return onSnapshot(q, (snapshot) => {
       callback(snapshot.docs.map(doc => doc.data()).sort((a: any, b: any) => b.submittedAt - a.submittedAt));
@@ -166,4 +166,4 @@ export const subscribeToAllMyResponses = (userId: string, callback: (responses: 
   const resps = getLocalData('responses').filter((r: any) => r.respondentUid === userId);
   callback(resps.sort((a: any, b: any) => b.submittedAt - a.submittedAt));
   return () => {};
-};
+}
