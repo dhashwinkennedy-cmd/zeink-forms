@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -20,13 +21,15 @@ import {
 } from "firebase/auth";
 import { Form, FormResponse } from "../types.ts";
 
+const env = (window as any).process?.env || {};
+
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "",
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "",
-  projectId: process.env.FIREBASE_PROJECT_ID || "",
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.FIREBASE_APP_ID || ""
+  apiKey: env.FIREBASE_API_KEY || "",
+  authDomain: env.FIREBASE_AUTH_DOMAIN || "",
+  projectId: env.FIREBASE_PROJECT_ID || "",
+  storageBucket: env.FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: env.FIREBASE_APP_ID || ""
 };
 
 export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
@@ -60,9 +63,8 @@ const mockAuth = {
     return JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
   },
   onAuthStateChanged: (callback: any) => {
-    // Immediate callback for mock mode
     const user = JSON.parse(localStorage.getItem('zienk_auth_user') || 'null');
-    setTimeout(() => callback(user), 0);
+    const timer = setTimeout(() => callback(user), 0);
     
     const listener = (e: StorageEvent) => {
       if (e.key === 'zienk_auth_user') {
@@ -70,7 +72,10 @@ const mockAuth = {
       }
     };
     window.addEventListener('storage', listener);
-    return () => window.removeEventListener('storage', listener);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('storage', listener);
+    };
   },
   signOut: async () => {
     localStorage.removeItem('zienk_auth_user');
@@ -78,7 +83,6 @@ const mockAuth = {
   }
 };
 
-// Guard authInstance availability
 export const auth = (isFirebaseConfigured && authInstance) ? authInstance : mockAuth;
 
 export const signUpUser = async (email: string, pass: string) => {
@@ -103,10 +107,10 @@ export const signOutUser = async () => {
 };
 
 export const saveFormToCloud = async (form: Form) => {
-  if (isFirebaseConfigured && db && authInstance?.currentUser) {
+  if (isFirebaseConfigured && db && auth.currentUser) {
     try {
       const formRef = doc(db, "forms", form.id);
-      await setDoc(formRef, { ...form, ownerId: authInstance.currentUser.uid, updatedAt: Date.now() }, { merge: true });
+      await setDoc(formRef, { ...form, ownerId: auth.currentUser.uid, updatedAt: Date.now() }, { merge: true });
     } catch (e) { console.error(e); }
   } else {
     const forms = getLocalData('forms');
@@ -119,11 +123,11 @@ export const saveFormToCloud = async (form: Form) => {
 };
 
 export const submitResponse = async (response: FormResponse) => {
-  if (isFirebaseConfigured && db && authInstance?.currentUser) {
+  if (isFirebaseConfigured && db && auth.currentUser) {
     try {
       const responseRef = doc(db, "responses", response.id);
       const formRef = doc(db, "forms", response.formId);
-      await setDoc(responseRef, { ...response, respondentUid: authInstance.currentUser.uid });
+      await setDoc(responseRef, { ...response, respondentUid: auth.currentUser.uid });
       await updateDoc(formRef, { responsesCount: increment(1) });
       return true;
     } catch (e) { return false; }
@@ -177,4 +181,4 @@ export const subscribeToAllMyResponses = (userId: string, callback: (responses: 
   const resps = getLocalData('responses').filter((r: any) => r.respondentUid === userId);
   callback(resps.sort((a: any, b: any) => b.submittedAt - a.submittedAt));
   return () => {};
-}
+};

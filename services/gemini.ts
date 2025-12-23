@@ -1,14 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+const env = (window as any).process?.env || {};
+
 /**
  * Evaluates a long text response using Gemini AI based on a provided rubric.
  * Returns a structured object with marks, reasoning, and a quality tag.
  */
 export const evaluateLongText = async (question: string, answer: string, rubric: string = "Be fair and constructive.") => {
-  if (!process.env.API_KEY) return { marks: 0, reason: "AI Engine Offline: Contact Administrator", tag: "SYSTEM_OFFLINE" };
+  const apiKey = env.API_KEY;
+  if (!apiKey) return { marks: 0, reason: "AI Engine Offline: Contact Administrator", tag: "SYSTEM_OFFLINE" };
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const response = await ai.models.generateContent({
@@ -31,7 +34,6 @@ export const evaluateLongText = async (question: string, answer: string, rubric:
     });
     
     const text = response.text || "{}";
-    // Sanitize in case model adds markers
     const sanitized = text.replace(/```json|```/g, "").trim();
     return JSON.parse(sanitized);
   } catch (e) {
