@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Trash2, Plus, Check, Info, PlusCircle, Image as ImageIcon, Film, ShieldCheck, Upload, X } from 'lucide-react';
+import { Trash2, Plus, Check, Info, PlusCircle, Image as ImageIcon, Film, ShieldCheck, Upload, X, BrainCircuit, Sparkles } from 'lucide-react';
 import { Field, MCQOption, Media } from '../types.ts';
 
 interface FieldEditorProps {
@@ -75,7 +75,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, onUpdate, onDel
 
   const hasOther = field.options?.some(o => o.isOther);
   const isPureTextOrMedia = field.type === 'TEXT';
-  const supportsOTP = field.type === 'PHONE' || field.type === 'EMAIL';
+  const canHaveAIGrading = ['EMAIL', 'PHONE', 'SHORT_TEXT', 'LONG_TEXT', 'ONE_LINE'].includes(field.type);
 
   return (
     <div className="bg-white p-6 rounded-[1.8rem] shadow-sm border-l-4 border-[#ff1a1a] space-y-5 transition-all w-full relative group/editor">
@@ -189,30 +189,87 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({ field, onUpdate, onDel
       )}
 
       {!isPureTextOrMedia && (
-        <div className="pt-4 border-t border-gray-50 flex flex-wrap items-center gap-6">
-          <label className="flex items-center gap-3 cursor-pointer group select-none">
-            <div className="relative">
+        <div className="pt-4 border-t border-gray-50 space-y-6">
+          <div className="flex flex-wrap items-center gap-6">
+            <label className="flex items-center gap-3 cursor-pointer group select-none">
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  checked={field.required} 
+                  onChange={(e) => onUpdate({ ...field, required: e.target.checked })} 
+                  className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-gray-200 bg-white checked:border-[#ff1a1a] checked:bg-[#ff1a1a] transition-all" 
+                />
+                <Check className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+              </div>
+              <span className="text-[10px] font-black text-[#0a0b10] uppercase tracking-widest">Required</span>
+            </label>
+            
+            <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#0a0b10]">Base Points</span>
               <input 
-                type="checkbox" 
-                checked={field.required} 
-                onChange={(e) => onUpdate({ ...field, required: e.target.checked })} 
-                className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-gray-200 bg-white checked:border-[#ff1a1a] checked:bg-[#ff1a1a] transition-all" 
+                type="number" 
+                step="0.5" 
+                className="w-16 bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none text-[#0a0b10] font-black text-center" 
+                value={field.points} 
+                onChange={(e) => onUpdate({ ...field, points: parseFloat(e.target.value) || 0 })} 
               />
-              <Check className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
             </div>
-            <span className="text-[10px] font-black text-[#0a0b10] uppercase tracking-widest">Required</span>
-          </label>
-          
-          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#0a0b10]">Default Points</span>
-            <input 
-              type="number" 
-              step="0.5" 
-              className="w-16 bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none text-[#0a0b10] font-black text-center" 
-              value={field.points} 
-              onChange={(e) => onUpdate({ ...field, points: parseFloat(e.target.value) || 0 })} 
-            />
           </div>
+
+          {canHaveAIGrading && (
+            <div className="bg-gray-50/50 rounded-[2rem] p-6 sm:p-8 border border-gray-100/50 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm border border-gray-50">
+                    <BrainCircuit className="w-5 h-5 text-[#ff1a1a]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-[#0a0b10]">AI Grading Intelligence</span>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Automated rubric evaluation</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onUpdate({ 
+                    ...field, 
+                    aiSettings: { 
+                      mode: field.aiSettings?.mode === 'EVALUATE' ? 'NONE' : 'EVALUATE',
+                      prompt: field.aiSettings?.prompt || ''
+                    } 
+                  })}
+                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${field.aiSettings?.mode === 'EVALUATE' ? 'bg-[#0a0b10] text-white shadow-xl shadow-gray-200' : 'bg-white text-gray-400 border border-gray-100'}`}
+                >
+                  {field.aiSettings?.mode === 'EVALUATE' ? 'Active' : 'Enable'}
+                </button>
+              </div>
+
+              {field.aiSettings?.mode === 'EVALUATE' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-3 duration-300">
+                  <div className="relative">
+                    <textarea 
+                      className="w-full p-6 bg-white rounded-[1.5rem] border border-gray-100 outline-none font-bold text-xs sm:text-sm text-[#0a0b10] placeholder-gray-200 min-h-[160px] resize-y shadow-inner focus:ring-4 ring-red-500/5 transition-all leading-relaxed"
+                      placeholder="Input the grading rubric here. Be specific about what the AI should look for in the response..."
+                      value={field.aiSettings.prompt || ''}
+                      onChange={(e) => onUpdate({ ...field, aiSettings: { mode: 'EVALUATE', prompt: e.target.value } })}
+                    />
+                    <Sparkles className="absolute right-5 bottom-5 w-5 h-5 text-gray-100 pointer-events-none" />
+                  </div>
+                  
+                  <div className="flex items-start gap-4 px-2">
+                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                      <Info className="w-4 h-4 text-[#ff1a1a]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] text-[#0a0b10] font-black uppercase tracking-[0.1em]">AI Rubric Best Practices</p>
+                      <p className="text-[10px] text-gray-400 font-medium leading-relaxed italic">
+                        To get high-quality grading, provide explicit instructions. 
+                        <strong> Example:</strong> "Award full marks if the answer explains the greenhouse effect with at least two specific gases mentioned. Penalize informal tone or factual errors regarding temperature gradients."
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
