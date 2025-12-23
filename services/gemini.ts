@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
@@ -5,36 +6,36 @@ import { GoogleGenAI, Type } from "@google/genai";
  * Returns a structured object with marks, reasoning, and a quality tag.
  */
 export const evaluateLongText = async (question: string, answer: string, rubric: string = "Be fair and constructive.") => {
-  if (!process.env.API_KEY) return { marks: 5, reason: "AI disabled (No API Key)", tag: "NEUTRAL" };
+  if (!process.env.API_KEY) return { marks: 0, reason: "AI Engine Offline: Contact Administrator", tag: "SYSTEM_OFFLINE" };
 
-  // Create a new instance right before making an API call to ensure it always uses the most up-to-date API key.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Question: ${question}\nUser Answer: ${answer}\nGrading Rubric: ${rubric}`,
+      contents: `CONTEXTUAL DATA:\n- Question: ${question}\n- Respondent Answer: ${answer}\n- Internal Rubric: ${rubric}\n\nTASK:\nGrade the answer out of 10. Provide clear reasoning. Identify if it is EXCELLENT, GOOD, POOR, or INCOMPLETE.`,
       config: {
-        systemInstruction: "You are a professional grader. Evaluate the user's answer based on the provided question and grading rubric. Provide an objective score and constructive feedback. Return JSON only.",
+        systemInstruction: "You are a professional educational assessor. Your goal is to grade answers strictly but fairly based on provided rubrics. You MUST return ONLY a valid JSON object matching the provided schema. Do not include markdown formatting or prose around the JSON.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            marks: { type: Type.NUMBER, description: "Score out of 10" },
-            reason: { type: Type.STRING, description: "Constructive feedback for the student" },
-            tag: { type: Type.STRING, description: "One word tag describing the quality: EXCELLENT, GOOD, POOR, or INCOMPLETE." }
+            marks: { type: Type.NUMBER, description: "Numerical score strictly between 0 and 10." },
+            reason: { type: Type.STRING, description: "Professional feedback regarding why this score was awarded." },
+            tag: { type: Type.STRING, description: "A single classification: EXCELLENT, GOOD, POOR, or INCOMPLETE." }
           },
           required: ["marks", "reason", "tag"]
         },
-        thinkingConfig: { thinkingBudget: 4096 }
+        thinkingConfig: { thinkingBudget: 16384 }
       }
     });
     
-    // Using the .text property directly instead of text()
     const text = response.text || "{}";
-    return JSON.parse(text);
+    // Sanitize in case model adds markers
+    const sanitized = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(sanitized);
   } catch (e) {
-    console.error("Gemini Evaluation Engine Error:", e);
-    return { marks: 0, reason: "The AI engine encountered an error while evaluating this response.", tag: "ERROR" };
+    console.error("Gemini Evaluation Engine Fatal Error:", e);
+    return { marks: 0, reason: "The AI assessment pipeline encountered an unexpected interruption.", tag: "ENGINE_ERROR" };
   }
 };
