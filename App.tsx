@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -11,11 +12,10 @@ import LoginPage from './pages/LoginPage';
 import AccountSettings from './pages/AccountSettings';
 import UpgradePage from './pages/UpgradePage';
 import AIWallet from './pages/AIWallet';
-import { ShieldAlert, Zap, X, CloudOff, Key, ExternalLink } from 'lucide-react';
+import { ShieldAlert, Zap, X, CloudOff, Key, ExternalLink, Info } from 'lucide-react';
 import { isConfigValid } from './services/firebase';
 
-// Extend Window interface for AI Studio tools
-// Fix: Use the expected AIStudio interface name to match global declarations and avoid modifier/type conflicts.
+// Type definitions for AI Studio environment
 declare global {
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;
@@ -23,35 +23,48 @@ declare global {
   }
 
   interface Window {
-    aistudio: AIStudio;
+    // Fix: Made 'aistudio' optional to resolve modifier mismatch errors with existing environment declarations.
+    aistudio?: AIStudio;
   }
 }
 
 const APIErrorShield: React.FC = () => {
   const [dismissed, setDismissed] = useState(false);
   const [hasGeminiKey, setHasGeminiKey] = useState(true);
+  const [isAIStudioAvailable, setIsAIStudioAvailable] = useState(false);
   
   const firebaseKeyMissing = !isConfigValid;
 
-  useEffect(() => {
-    const checkKeys = async () => {
-      // Check environment variable first
-      const envKey = process.env.API_KEY;
-      const hasEnvKey = envKey && envKey !== 'undefined' && envKey.length > 5;
-      
-      if (hasEnvKey) {
-        setHasGeminiKey(true);
-      } else if (window.aistudio) {
-        // Fallback to AI Studio selection check
-        const selected = await window.aistudio.hasSelectedApiKey();
-        setHasGeminiKey(selected);
-      } else {
-        setHasGeminiKey(false);
-      }
-    };
+  const checkGeminiKeyStatus = async () => {
+    // 1. Check for standard environment variable safely
+    let envKeyAvailable = false;
+    try {
+      const key = process.env.API_KEY;
+      envKeyAvailable = !!(key && key !== 'undefined' && key.length > 10);
+    } catch (e) {
+      envKeyAvailable = false;
+    }
 
-    checkKeys();
-    const interval = setInterval(checkKeys, 3000); // Poll for key selection
+    // 2. Check for AI Studio platform selection
+    let studioSelected = false;
+    if (window.aistudio) {
+      setIsAIStudioAvailable(true);
+      try {
+        studioSelected = await window.aistudio.hasSelectedApiKey();
+      } catch (e) {
+        studioSelected = false;
+      }
+    } else {
+      setIsAIStudioAvailable(false);
+    }
+
+    setHasGeminiKey(envKeyAvailable || studioSelected);
+  };
+
+  useEffect(() => {
+    checkGeminiKeyStatus();
+    // Frequent polling to catch environment updates or selection completion
+    const interval = setInterval(checkGeminiKeyStatus, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -59,18 +72,17 @@ const APIErrorShield: React.FC = () => {
     if (window.aistudio) {
       try {
         await window.aistudio.openSelectKey();
-        // Proceed as if successful per guidelines
+        // GUIDELINE: Assume success after trigger to mitigate race conditions
         setHasGeminiKey(true);
       } catch (err) {
-        console.error("Key selection failed", err);
+        console.error("AI Studio Key Selection failed", err);
       }
-    } else {
-      alert("AI Studio environment not detected. Please ensure you are running this in a compatible workspace.");
     }
   };
 
   const geminiKeyMissing = !hasGeminiKey;
 
+  // Don't show if everything is okay or user explicitly closed it
   if (dismissed || (!geminiKeyMissing && !firebaseKeyMissing)) return null;
 
   return (
@@ -90,35 +102,42 @@ const APIErrorShield: React.FC = () => {
             {firebaseKeyMissing && (
               <p className="text-sm font-bold text-red-200 flex items-center justify-center md:justify-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#ff1a1a] animate-pulse" />
-                Firebase Configuration missing. App is in Offline/Guest mode.
+                Firebase Configuration missing. Using Offline/Local storage.
               </p>
             )}
             {geminiKeyMissing && (
               <div className="space-y-1">
                 <p className="text-sm font-bold text-orange-200 flex items-center justify-center md:justify-start gap-2">
                   <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                  Gemini API Key is missing. AI Evaluation features are disabled.
+                  Gemini API Key not detected in environment or selection.
                 </p>
-                <a 
-                  href="https://ai.google.dev/gemini-api/docs/billing" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="text-[10px] text-gray-400 hover:text-white underline ml-4 flex items-center gap-1 justify-center md:justify-start"
-                >
-                  Learn about Billing & Paid Projects <ExternalLink size={10} />
-                </a>
+                <div className="flex items-center gap-4 justify-center md:justify-start">
+                   <a 
+                    href="https://ai.google.dev/gemini-api/docs/billing" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-[10px] text-gray-400 hover:text-white underline flex items-center gap-1"
+                  >
+                    Learn about Billing <ExternalLink size={10} />
+                  </a>
+                  {!isAIStudioAvailable && (
+                    <span className="text-[10px] text-gray-500 italic flex items-center gap-1">
+                      <Info size={10} /> Add 'API_KEY' to your environment secrets.
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-3 relative z-10 w-full md:w-auto">
-          {geminiKeyMissing && (
+          {geminiKeyMissing && isAIStudioAvailable && (
             <button 
               onClick={handleConnectGemini}
               className="flex-1 md:flex-none px-6 py-3 bg-white text-[#0a0b10] rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
             >
-              <Key size={14} /> Connect Gemini
+              <Key size={14} /> Select Key
             </button>
           )}
           {firebaseKeyMissing && (
@@ -127,12 +146,13 @@ const APIErrorShield: React.FC = () => {
               target="_blank" 
               className="flex-1 md:flex-none px-6 py-3 bg-[#ff1a1a] text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all text-center"
             >
-              Firebase Console
+              Setup Firebase
             </a>
           )}
           <button 
             onClick={() => setDismissed(true)}
             className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
+            title="Dismiss warning"
           >
             <X size={20} />
           </button>
