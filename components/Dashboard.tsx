@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, FileText, Send, Share2, MoreVertical, ExternalLink, Pause, Play, Copy, X, Check, Zap, Loader2 } from 'lucide-react';
+import { Search, Filter, Plus, FileText, Send, Share2, MoreVertical, ExternalLink, Pause, Play, Copy, X, Check, Zap, Loader2, Layout } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FormStatus, FormSchema } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -42,25 +42,26 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRespondForm = async () => {
-    const input = prompt("Enter Form ID or Paste Link:");
+    const input = prompt("Enter Form ID or Paste Full Link:");
     if (!input) return;
 
     let id = input.trim();
+    // Logic to extract ID if a URL was pasted
     if (id.includes('/run/')) {
       id = id.split('/run/')[1].split(/[?#]/)[0];
     }
 
-    // Quick verification
+    // Quick verification check
     try {
       const docRef = doc(db, 'forms', id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         navigate(`/run/${id}`);
       } else {
-        alert("Invalid Form ID or Link. Please try again.");
+        alert("Verification Failed: Form ID not found in Zienk Cloud.");
       }
     } catch (err) {
-      alert("Error verifying form. Try again.");
+      alert("Error: Cloud connectivity issue. Please try again.");
     }
   };
 
@@ -77,7 +78,7 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-black text-[#0a0b10] tracking-tight">Dashboard</h1>
-          <p className="text-gray-500 font-medium">Manage your secure cloud forms.</p>
+          <p className="text-gray-500 font-medium italic">Your secure cloud workspace.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -100,7 +101,7 @@ const Dashboard: React.FC = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search forms..." 
+            placeholder="Search your forms..." 
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-transparent border-2 focus:border-[#ff1a1a] rounded-xl focus:outline-none transition-all font-medium"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -128,16 +129,16 @@ const Dashboard: React.FC = () => {
       {loading ? (
         <div className="text-center py-20 flex flex-col items-center gap-4">
           <Zap className="animate-spin text-[#ff1a1a]" size={48} />
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Workspace...</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Syncing with Zienk Cloud...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-32">
           {activeTab === 'forms' ? (
             filteredForms.length > 0 ? (
               filteredForms.map((form) => (
                 <div 
                   key={form.id} 
-                  className={`bg-white rounded-[2.5rem] p-8 border hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden ${form.status === FormStatus.PAUSED ? 'border-orange-100' : ''}`}
+                  className={`bg-white rounded-[2.5rem] p-8 border hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden ${form.status === FormStatus.PAUSED ? 'border-orange-100 opacity-80' : ''}`}
                   onClick={() => navigate(form.status === FormStatus.DRAFT ? `/editor/${form.id}` : `/summary/${form.id}`)}
                 >
                   <div className="flex justify-between items-start mb-6">
@@ -153,9 +154,6 @@ const Dashboard: React.FC = () => {
                         className="p-2 text-gray-300 hover:text-[#ff1a1a] transition-colors rounded-xl hover:bg-red-50"
                       >
                         <Share2 size={18} />
-                      </button>
-                      <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-100">
-                        <MoreVertical size={18} />
                       </button>
                     </div>
                   </div>
@@ -179,37 +177,42 @@ const Dashboard: React.FC = () => {
             ) : (
               <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] bg-gray-50/50">
                 <FileText className="mx-auto text-gray-200 mb-4" size={48} />
-                <p className="text-gray-400 font-bold">No forms created yet. Start by clicking "Create New".</p>
+                <p className="text-gray-400 font-bold">Your cloud workspace is empty. Create your first form!</p>
               </div>
             )
           ) : (
-            <div className="col-span-full py-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-[3rem] bg-gray-50/50">No submissions found.</div>
+            <div className="col-span-full py-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-[3rem] bg-gray-50/50">No activity history found.</div>
           )}
         </div>
       )}
 
-      {/* Shared/Published Popup (Unified UI) */}
+      {/* Shared/Published Popup (Unified Logic) */}
       {shareForm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-          <div className="fixed inset-0 bg-[#0a0b10]/60 backdrop-blur-md" onClick={() => setShareForm(null)} />
-          <div className="relative bg-white rounded-[2.5rem] p-10 max-w-lg w-full space-y-8 shadow-2xl animate-in zoom-in-95 duration-300 border-2 border-gray-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-3xl font-black text-[#0a0b10] tracking-tight italic uppercase">Form Details</h3>
+          <div className="fixed inset-0 bg-[#0a0b10]/80 backdrop-blur-md" onClick={() => setShareForm(null)} />
+          <div className="relative bg-white rounded-[3rem] p-10 max-w-lg w-full space-y-8 shadow-2xl animate-in zoom-in-95 duration-300 border-2 border-white overflow-hidden">
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                {/* Added Layout import above to fix missing name error */}
+                <Layout size={120} className="text-[#ff1a1a] rotate-12" />
+            </div>
+
+            <div className="flex items-center justify-between relative z-10">
+              <h3 className="text-3xl font-black text-[#0a0b10] tracking-tighter italic uppercase">Form Access</h3>
               <button onClick={() => setShareForm(null)} className="p-2 hover:bg-gray-100 rounded-full transition-all"><X size={24}/></button>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Form Share Link</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Direct Share Link</p>
                 <div className="flex gap-2">
                   <input 
                     readOnly 
-                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm overflow-hidden text-ellipsis"
+                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm overflow-hidden text-ellipsis text-gray-600"
                     value={`${window.location.origin}/#/run/${shareForm.id}`}
                   />
                   <button 
                     onClick={() => copyToClipboard(`${window.location.origin}/#/run/${shareForm.id}`)}
-                    className="p-4 bg-[#ff1a1a] text-white rounded-2xl hover:opacity-90 transition-all shadow-lg"
+                    className="p-4 bg-[#ff1a1a] text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-red-100"
                   >
                     {copied ? <Check size={20} /> : <Copy size={20} />}
                   </button>
@@ -217,27 +220,27 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Unique Identifier (ID)</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Unique Form ID</p>
                 <div className="flex gap-2">
                   <input 
                     readOnly 
-                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm tracking-widest"
+                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm tracking-widest text-[#0a0b10]"
                     value={shareForm.id}
                   />
                   <button 
                     onClick={() => copyToClipboard(shareForm.id)}
-                    className="p-4 bg-[#0a0b10] text-white rounded-2xl hover:opacity-90 transition-all shadow-lg"
+                    className="p-4 bg-[#0a0b10] text-white rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
                   >
                     {copied ? <Check size={20} /> : <Copy size={20} />}
                   </button>
                 </div>
               </div>
 
-              <div className="bg-green-50 p-6 rounded-3xl border border-green-100 flex items-center gap-4">
+              <div className="bg-[#fdebeb] p-6 rounded-[2rem] border border-[#ff1a1a]/10 flex items-center gap-4">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                  <ExternalLink className="text-green-600" size={24} />
+                  <ExternalLink className="text-[#ff1a1a]" size={24} />
                 </div>
-                <p className="text-sm font-bold text-green-700 leading-relaxed">Respondents can access this form by pasting the ID or Link in their dashboard.</p>
+                <p className="text-xs font-bold text-[#0a0b10] leading-relaxed">Respondents can access this by clicking the link or pasting the ID in the <span className="text-[#ff1a1a]">Respond</span> dashboard.</p>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserTier } from '../types';
-import { auth, db } from '../services/firebase';
+import { auth, db, isConfigValid } from '../services/firebase';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -34,11 +34,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isConfigValid) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
-        const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as User);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+          if (userDoc.exists()) {
+            setUser(userDoc.data() as User);
+          }
+        } catch (e) {
+          console.error("Firestore Error:", e);
         }
       } else {
         setUser(null);
@@ -49,10 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, pass: string) => {
+    if (!isConfigValid) throw new Error("Firebase API key is missing. Contact site administrator.");
     await signInWithEmailAndPassword(auth, email, pass);
   };
 
   const signup = async (email: string, pass: string, username: string) => {
+    if (!isConfigValid) throw new Error("Firebase API key is missing. Contact site administrator.");
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const newUser: User = {
       id: cred.user.uid,
@@ -74,21 +85,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addCredits = async (amount: number) => {
-    if (!user) return;
+    if (!user || !isConfigValid) return;
     const newCredits = user.credits_bonus + amount;
     await updateDoc(doc(db, 'users', user.id), { credits_bonus: newCredits });
     setUser({ ...user, credits_bonus: newCredits });
   };
 
   const upgradeToPro = async () => {
-    if (!user) return;
+    if (!user || !isConfigValid) return;
     const updates = { tier: UserTier.PRO, credits_monthly: 700 };
     await updateDoc(doc(db, 'users', user.id), updates);
     setUser({ ...user, ...updates });
   };
 
   const updateUser = async (updates: { name?: string; avatar?: string }) => {
-    if (!user) return;
+    if (!user || !isConfigValid) return;
     await updateDoc(doc(db, 'users', user.id), updates);
     setUser({ ...user, ...updates });
   };
@@ -102,6 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return context;
 };
