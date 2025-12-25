@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, FileText, Send, Share2, MoreVertical, ExternalLink, Pause, Play, Copy, X, Check, Zap } from 'lucide-react';
+import { Search, Filter, Plus, FileText, Send, Share2, MoreVertical, ExternalLink, Pause, Play, Copy, X, Check, Zap, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FormStatus, FormSchema } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { collection, query, where, getDocs, updateDoc, doc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { collection, query, where, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -41,14 +41,26 @@ const Dashboard: React.FC = () => {
     navigate(`/editor/${id}`);
   };
 
-  const handleRespondForm = () => {
+  const handleRespondForm = async () => {
     const input = prompt("Enter Form ID or Paste Link:");
-    if (input) {
-      let id = input.trim();
-      if (id.includes('/run/')) {
-        id = id.split('/run/')[1].split(/[?#]/)[0];
+    if (!input) return;
+
+    let id = input.trim();
+    if (id.includes('/run/')) {
+      id = id.split('/run/')[1].split(/[?#]/)[0];
+    }
+
+    // Quick verification
+    try {
+      const docRef = doc(db, 'forms', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        navigate(`/run/${id}`);
+      } else {
+        alert("Invalid Form ID or Link. Please try again.");
       }
-      navigate(`/run/${id}`);
+    } catch (err) {
+      alert("Error verifying form. Try again.");
     }
   };
 
@@ -61,7 +73,7 @@ const Dashboard: React.FC = () => {
   const filteredForms = forms.filter(f => f.title.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-black text-[#0a0b10] tracking-tight">Dashboard</h1>
@@ -114,76 +126,85 @@ const Dashboard: React.FC = () => {
       </div>
 
       {loading ? (
-        // Fix for "Cannot find name 'Zap'" - Added missing import above
-        <div className="text-center py-20"><Zap className="animate-spin mx-auto text-[#ff1a1a]" size={48} /></div>
+        <div className="text-center py-20 flex flex-col items-center gap-4">
+          <Zap className="animate-spin text-[#ff1a1a]" size={48} />
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading Workspace...</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
           {activeTab === 'forms' ? (
-            filteredForms.map((form) => (
-              <div 
-                key={form.id} 
-                className={`bg-white rounded-[2.5rem] p-8 border hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden ${form.status === FormStatus.PAUSED ? 'border-orange-100 shadow-orange-50/50' : ''}`}
-                onClick={() => navigate(form.status === FormStatus.DRAFT ? `/editor/${form.id}` : `/summary/${form.id}`)}
-              >
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`p-3 rounded-2xl shadow-lg ${
-                    form.status === FormStatus.LIVE ? 'bg-[#ff1a1a] text-white shadow-red-100' : 
-                    form.status === FormStatus.PAUSED ? 'bg-orange-500 text-white shadow-orange-100' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    {form.status === FormStatus.PAUSED ? <Pause size={20} /> : <FileText size={20} />}
+            filteredForms.length > 0 ? (
+              filteredForms.map((form) => (
+                <div 
+                  key={form.id} 
+                  className={`bg-white rounded-[2.5rem] p-8 border hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden ${form.status === FormStatus.PAUSED ? 'border-orange-100' : ''}`}
+                  onClick={() => navigate(form.status === FormStatus.DRAFT ? `/editor/${form.id}` : `/summary/${form.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <div className={`p-3 rounded-2xl shadow-lg ${
+                      form.status === FormStatus.LIVE ? 'bg-[#ff1a1a] text-white shadow-red-100' : 
+                      form.status === FormStatus.PAUSED ? 'bg-orange-500 text-white shadow-orange-100' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {form.status === FormStatus.PAUSED ? <Pause size={20} /> : <FileText size={20} />}
+                    </div>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShareForm(form); }}
+                        className="p-2 text-gray-300 hover:text-[#ff1a1a] transition-colors rounded-xl hover:bg-red-50"
+                      >
+                        <Share2 size={18} />
+                      </button>
+                      <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-100">
+                        <MoreVertical size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setShareForm(form); }}
-                      className="p-2 text-gray-300 hover:text-[#ff1a1a] transition-colors rounded-xl hover:bg-red-50"
-                    >
-                      <Share2 size={18} />
-                    </button>
-                    <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors rounded-xl hover:bg-gray-100">
-                      <MoreVertical size={18} />
-                    </button>
+                  <h3 className="font-black text-xl text-[#0a0b10] group-hover:text-[#ff1a1a] transition-colors tracking-tight line-clamp-1">{form.title}</h3>
+                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">{new Date(form.createdAt).toLocaleDateString()}</p>
+                  
+                  <div className="flex items-center justify-between mt-8">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                      <Send size={14} className="text-[#ff1a1a]" />
+                      <span>{form.responseCount} responses</span>
+                    </div>
+                    <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm border ${
+                      form.status === FormStatus.LIVE ? 'bg-green-50 text-green-700 border-green-100' :
+                      form.status === FormStatus.PAUSED ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-gray-100 text-gray-700 border-gray-200'
+                    }`}>
+                      {form.status}
+                    </span>
                   </div>
                 </div>
-                <h3 className="font-black text-xl text-[#0a0b10] group-hover:text-[#ff1a1a] transition-colors tracking-tight line-clamp-1">{form.title}</h3>
-                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">{new Date(form.createdAt).toLocaleDateString()}</p>
-                
-                <div className="flex items-center justify-between mt-8">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
-                    <Send size={14} className="text-[#ff1a1a]" />
-                    <span>{form.responseCount} responses</span>
-                  </div>
-                  <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm border ${
-                    form.status === FormStatus.LIVE ? 'bg-green-50 text-green-700 border-green-100' :
-                    form.status === FormStatus.PAUSED ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-gray-100 text-gray-700 border-gray-200'
-                  }`}>
-                    {form.status}
-                  </span>
-                </div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[3rem] bg-gray-50/50">
+                <FileText className="mx-auto text-gray-200 mb-4" size={48} />
+                <p className="text-gray-400 font-bold">No forms created yet. Start by clicking "Create New".</p>
               </div>
-            ))
+            )
           ) : (
-            <div className="col-span-full py-20 text-center text-gray-400 font-bold">No submissions found.</div>
+            <div className="col-span-full py-20 text-center text-gray-400 font-bold border-2 border-dashed rounded-[3rem] bg-gray-50/50">No submissions found.</div>
           )}
         </div>
       )}
 
-      {/* Share Modal */}
+      {/* Shared/Published Popup (Unified UI) */}
       {shareForm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
           <div className="fixed inset-0 bg-[#0a0b10]/60 backdrop-blur-md" onClick={() => setShareForm(null)} />
           <div className="relative bg-white rounded-[2.5rem] p-10 max-w-lg w-full space-y-8 shadow-2xl animate-in zoom-in-95 duration-300 border-2 border-gray-100">
             <div className="flex items-center justify-between">
-              <h3 className="text-3xl font-black text-[#0a0b10] tracking-tight italic uppercase">Share Form</h3>
+              <h3 className="text-3xl font-black text-[#0a0b10] tracking-tight italic uppercase">Form Details</h3>
               <button onClick={() => setShareForm(null)} className="p-2 hover:bg-gray-100 rounded-full transition-all"><X size={24}/></button>
             </div>
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Form Link</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Form Share Link</p>
                 <div className="flex gap-2">
                   <input 
                     readOnly 
-                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm"
+                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm overflow-hidden text-ellipsis"
                     value={`${window.location.origin}/#/run/${shareForm.id}`}
                   />
                   <button 
@@ -196,11 +217,11 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Form Unique ID</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Unique Identifier (ID)</p>
                 <div className="flex gap-2">
                   <input 
                     readOnly 
-                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm tracking-wider"
+                    className="flex-1 bg-gray-50 border-2 border-transparent p-4 rounded-2xl font-bold text-sm tracking-widest"
                     value={shareForm.id}
                   />
                   <button 
@@ -214,9 +235,9 @@ const Dashboard: React.FC = () => {
 
               <div className="bg-green-50 p-6 rounded-3xl border border-green-100 flex items-center gap-4">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                  <Send className="text-green-600" size={24} />
+                  <ExternalLink className="text-green-600" size={24} />
                 </div>
-                <p className="text-sm font-bold text-green-700">Paste the Link or ID in the "Respond" dashboard to start filling.</p>
+                <p className="text-sm font-bold text-green-700 leading-relaxed">Respondents can access this form by pasting the ID or Link in their dashboard.</p>
               </div>
             </div>
           </div>

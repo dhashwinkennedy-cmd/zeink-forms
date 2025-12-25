@@ -1,79 +1,67 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CheckCircle2, User as UserIcon, Plus, Zap, BrainCircuit, ShieldAlert, ArrowLeft } from 'lucide-react';
-import { FormSchema, FieldType, AIApproveMode, FormStatus } from '../../types';
+import { ChevronLeft, ChevronRight, CheckCircle2, User as UserIcon, Zap, ShieldAlert, ArrowLeft, Loader2 } from 'lucide-react';
+import { FormSchema, FieldType, FormStatus } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { evaluateWithAI } from '../../services/geminiService';
+import { db } from '../../services/firebase';
+import { doc, getDoc, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const FormRunner: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   
   const [form, setForm] = useState<FormSchema | null>(null);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [showAccountSwitch, setShowAccountSwitch] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulated fetch
-    setTimeout(() => {
-      setForm({
-        id: id || 'demo',
-        creatorId: 'c1',
-        title: 'Enterprise Quality Assessment',
-        subtitle: 'Secure evaluation powered by Zienk AI.',
-        status: id === 'paused-demo' ? FormStatus.PAUSED : FormStatus.LIVE,
-        bannerUrl: 'https://picsum.photos/seed/run/1200/400',
-        pages: [
-          {
-            id: 'p1',
-            title: 'Infrastructure',
-            fields: [
-              { 
-                id: 'f_mcq', 
-                type: FieldType.MCQ, 
-                title: 'Which cloud provider do you use?', 
-                required: true, 
-                options: [
-                  { id: 'opt1', text: 'AWS', isCorrect: false, points: 0 },
-                  { id: 'opt2', text: 'Azure', isCorrect: false, points: 0 }
-                ],
-                allowOther: true,
-                autoAIEval: true
-              },
-              {
-                id: 'f_date',
-                type: FieldType.DATE,
-                title: 'Select your infrastructure deployment date',
-                required: false
-              }
-            ]
-          }
-        ],
-        settings: {
-          allowCopyPaste: true,
-          isPublicSurvey: false,
-          whitelist: [],
-          blacklist: [],
-          accessMode: 'none',
-          resultReveal: 'instant',
-          allowRevisit: true,
-          admins: []
-        },
-        createdAt: Date.now(),
-        responseCount: 0,
-        cost_per_response: 2
-      });
-    }, 500);
+    if (id) {
+      fetchForm();
+    }
   }, [id]);
 
-  if (!form) return <div className="flex items-center justify-center h-screen bg-[#fdebeb]"><Zap className="animate-pulse text-[#ff1a1a]" size={48} /></div>;
+  const fetchForm = async () => {
+    setIsLoading(true);
+    try {
+      const docRef = doc(db, 'forms', id!);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setForm(docSnap.data() as FormSchema);
+      } else {
+        setError("Form not found. Please check the ID or Link.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load form. Check your internet connection.");
+    }
+    setIsLoading(false);
+  };
 
-  // HANDLE PAUSED STATE
+  if (isLoading) return <div className="flex flex-col items-center justify-center h-screen bg-[#fdebeb] gap-4">
+    <Zap className="animate-pulse text-[#ff1a1a]" size={64} />
+    <p className="font-black uppercase tracking-widest text-[#ff1a1a] text-xs">Decrypting Form...</p>
+  </div>;
+
+  if (error) return (
+    <div className="max-w-2xl mx-auto py-20 px-6 text-center space-y-8">
+      <div className="w-24 h-24 bg-red-100 text-red-600 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl">
+        <ShieldAlert size={48} />
+      </div>
+      <h1 className="text-3xl font-black uppercase tracking-tighter">{error}</h1>
+      <button onClick={() => navigate('/')} className="px-8 py-4 bg-[#0a0b10] text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center gap-2 mx-auto">
+        <ArrowLeft size={16} /> Return to Dashboard
+      </button>
+    </div>
+  );
+
+  if (!form) return null;
+
   if (form.status === FormStatus.PAUSED) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-6 text-center space-y-8 animate-in fade-in zoom-in-95 duration-500">
@@ -86,10 +74,7 @@ const FormRunner: React.FC = () => {
             The creator has temporarily suspended responses for <span className="text-[#0a0b10] underline decoration-[#ff1a1a] decoration-2">{form.title}</span>.
           </p>
         </div>
-        <button 
-          onClick={() => navigate('/')}
-          className="px-10 py-4 bg-[#0a0b10] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-2 mx-auto"
-        >
+        <button onClick={() => navigate('/')} className="px-10 py-4 bg-[#0a0b10] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl flex items-center gap-2 mx-auto">
           <ArrowLeft size={16} /> Back to HQ
         </button>
       </div>
@@ -102,27 +87,24 @@ const FormRunner: React.FC = () => {
   const handleNext = () => currentPageIdx < form.pages.length - 1 && setCurrentPageIdx(currentPageIdx + 1);
   const handlePrev = () => currentPageIdx > 0 && form.settings.allowRevisit && setCurrentPageIdx(currentPageIdx - 1);
 
-  const updateMCQAnswer = (fieldId: string, optionId: string, otherText?: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [fieldId]: {
-        selectedId: optionId,
-        otherText: otherText !== undefined ? otherText : prev[fieldId]?.otherText || ''
-      }
-    }));
-  };
-
   const handleSubmit = async () => {
-    setIsValidating(true);
-    setTimeout(() => {
-      setIsValidating(false);
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'submissions'), {
+        formId: id,
+        userId: user?.id || 'anonymous',
+        userEmail: user?.email || 'anonymous',
+        userName: user?.name || 'Anonymous Guest',
+        answers,
+        submittedAt: Date.now(),
+        score: 0, // AI evaluation would trigger here in a real scenario
+        status: 'pending'
+      });
       setIsSubmitted(true);
-    }, 1500);
-  };
-
-  const switchAccount = (email: string) => {
-    login(email);
-    setShowAccountSwitch(false);
+    } catch (err) {
+      alert("Error submitting form. Please try again.");
+    }
+    setIsSubmitting(false);
   };
 
   if (isSubmitted) {
@@ -151,33 +133,13 @@ const FormRunner: React.FC = () => {
           </div>
           <div className="text-xs">
             <p className="text-white/40 font-black uppercase tracking-widest text-[8px]">Participating As</p>
-            <p className="font-bold">{user ? user.email : 'Anonymous Guest'}</p>
+            <p className="font-bold">{user ? user.name : 'Anonymous Guest'}</p>
           </div>
         </div>
-        <button 
-          onClick={() => setShowAccountSwitch(!showAccountSwitch)}
-          className="text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-[#ff1a1a] px-3 py-1.5 rounded-lg transition-all"
-        >
-          {user ? 'Switch Identity' : 'Sign In'}
+        <button onClick={() => navigate('/login')} className="text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-[#ff1a1a] px-3 py-1.5 rounded-lg transition-all">
+          {user ? 'Signed In' : 'Sign In for Record'}
         </button>
       </div>
-
-      {showAccountSwitch && (
-        <div className="bg-white rounded-3xl border shadow-2xl p-8 space-y-6 animate-in slide-in-from-top-4 z-50 relative">
-          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Identify Confirmation</p>
-          <div className="space-y-2">
-            {['admin@zienk.io', 'user@example.com'].map(e => (
-              <button 
-                key={e}
-                onClick={() => switchAccount(e)}
-                className={`w-full text-left p-5 rounded-2xl border-2 transition-all font-black ${user?.email === e ? 'border-[#ff1a1a] bg-white text-[#ff1a1a]' : 'bg-white border-gray-100 hover:border-gray-200'}`}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="bg-white rounded-[3rem] shadow-sm border overflow-hidden">
         {form.bannerUrl && <img src={form.bannerUrl} alt="Banner" className="w-full h-56 object-cover" />}
@@ -204,46 +166,42 @@ const FormRunner: React.FC = () => {
               {field.type === FieldType.MCQ && (
                 <div className="space-y-4">
                   {field.options?.map((opt) => (
-                    <label key={opt.id} className={`flex items-center gap-5 p-6 rounded-3xl border-2 transition-all cursor-pointer bg-white group ${answers[field.id]?.selectedId === opt.id ? 'border-[#ff1a1a]' : 'border-gray-100 hover:border-gray-200'}`}>
-                      <input type="radio" name={field.id} className="w-6 h-6 accent-[#ff1a1a]" checked={answers[field.id]?.selectedId === opt.id} onChange={() => updateMCQAnswer(field.id, opt.id)} />
+                    <label key={opt.id} className={`flex items-center gap-5 p-6 rounded-3xl border-2 transition-all cursor-pointer bg-white group ${answers[field.id] === opt.id ? 'border-[#ff1a1a]' : 'border-gray-100 hover:border-gray-200'}`}>
+                      <input type="radio" name={field.id} className="w-6 h-6 accent-[#ff1a1a]" checked={answers[field.id] === opt.id} onChange={() => setAnswers({...answers, [field.id]: opt.id})} />
                       <span className="font-black text-gray-700 text-lg group-hover:text-[#0a0b10]">{opt.text}</span>
                     </label>
                   ))}
                 </div>
               )}
 
-              {field.type === FieldType.LONG_TEXT && (
+              {(field.type === FieldType.LONG_TEXT || field.type === FieldType.SHORT_TEXT) && (
                 <div className="space-y-4">
-                  <textarea 
-                    className="w-full p-8 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-[2rem] focus:outline-none min-h-[250px] text-xl font-medium transition-all shadow-sm"
-                    placeholder="Type your detailed response..."
-                    value={answers[field.id] || ''}
-                    onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
-                  />
-                </div>
-              )}
-
-              {field.type === FieldType.SHORT_TEXT && (
-                <div className="space-y-4">
-                   <input 
-                    type="text" 
-                    className="w-full p-6 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-2xl focus:outline-none font-bold text-lg"
-                    placeholder="Short answer..."
-                    value={answers[field.id] || ''}
-                    onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
-                  />
+                  {field.type === FieldType.LONG_TEXT ? (
+                    <textarea 
+                      className="w-full p-8 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-[2rem] focus:outline-none min-h-[200px] text-xl font-medium transition-all shadow-sm"
+                      placeholder="Type your response..."
+                      value={answers[field.id] || ''}
+                      onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  ) : (
+                    <input 
+                      type="text" 
+                      className="w-full p-6 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-2xl focus:outline-none font-bold text-lg"
+                      placeholder="Short answer..."
+                      value={answers[field.id] || ''}
+                      onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  )}
                 </div>
               )}
 
               {field.type === FieldType.DATE && (
-                <div className="space-y-4">
-                  <input 
-                    type="date" 
-                    className="w-full p-6 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-2xl focus:outline-none font-bold text-lg appearance-none"
-                    value={answers[field.id] || ''}
-                    onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
-                  />
-                </div>
+                <input 
+                  type="date" 
+                  className="w-full p-6 bg-white border-2 border-gray-100 focus:border-[#ff1a1a] rounded-2xl focus:outline-none font-bold text-lg"
+                  value={answers[field.id] || ''}
+                  onChange={(e) => setAnswers(prev => ({ ...prev, [field.id]: e.target.value }))}
+                />
               )}
             </div>
           ))}
@@ -251,15 +209,15 @@ const FormRunner: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between pb-24">
-        <button onClick={handlePrev} className="px-10 py-5 bg-white border-2 text-[#0a0b10] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 disabled:opacity-20 transition-all flex items-center gap-2 shadow-sm">
+        <button onClick={handlePrev} disabled={currentPageIdx === 0} className="px-10 py-5 bg-white border-2 text-[#0a0b10] rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 disabled:opacity-20 transition-all flex items-center gap-2">
           <ChevronLeft size={18} /> Previous
         </button>
         {isLastPage ? (
-          <button onClick={handleSubmit} disabled={isValidating} className="px-14 py-5 bg-[#0a0b10] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl flex items-center gap-3">
-            {isValidating ? <Zap className="animate-spin" size={18} /> : 'Submit Response'}
+          <button onClick={handleSubmit} disabled={isSubmitting} className="px-14 py-5 bg-[#0a0b10] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-2xl flex items-center gap-3">
+            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Submit Response'}
           </button>
         ) : (
-          <button onClick={handleNext} className="px-14 py-5 bg-[#ff1a1a] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-2xl shadow-red-200 flex items-center gap-2">
+          <button onClick={handleNext} className="px-14 py-5 bg-[#ff1a1a] text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-2xl flex items-center gap-2">
             Next Page <ChevronRight size={18} />
           </button>
         )}
