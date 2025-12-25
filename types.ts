@@ -1,85 +1,107 @@
 
-export type FieldType = 'TEXT' | 'EMAIL' | 'PHONE' | 'MCQ' | 'SHORT_TEXT' | 'LONG_TEXT' | 'ONE_LINE';
-
-export interface Media {
-  type: 'image' | 'video';
-  url: string;
-  title?: string;
+export enum FieldType {
+  HEADING = 'heading',
+  NORMAL_TEXT = 'normal_text',
+  MEDIA = 'media',
+  EMAIL = 'email',
+  PHONE = 'phone',
+  MCQ = 'mcq',
+  SHORT_TEXT = 'short_text',
+  LONG_TEXT = 'long_text',
+  DATE = 'date'
 }
 
-export interface MCQOption {
+export enum FormStatus {
+  DRAFT = 'Draft',
+  LIVE = 'Live',
+  EXPIRED = 'Expired',
+  PAUSED = 'Paused'
+}
+
+export enum AIApproveMode {
+  NONE = 'none',
+  AUTO = 'auto',
+  PROMPT = 'prompt'
+}
+
+export enum UserTier {
+  FREE = 'free',
+  PRO = 'pro'
+}
+
+export interface User {
   id: string;
-  label: string;
-  points: number;
-  isCorrect?: boolean;
-  isOther?: boolean;
-  media?: Media;
+  name: string;
+  email: string;
+  avatar: string;
+  credits_monthly: number;
+  credits_bonus: number;
+  tier: UserTier;
+  reset_date: number;
 }
 
-export interface Field {
+export interface Option {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+  points: number;
+  mediaUrl?: string;
+}
+
+export interface FormField {
   id: string;
   type: FieldType;
-  label: string;
-  subtitle?: string;
+  title: string;
+  placeholder?: string;
+  description?: string;
   required: boolean;
-  points: number;
-  options?: MCQOption[];
-  aiPrompt?: string; // For LONG_TEXT evaluation
-  media?: Media;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  options?: Option[];
+  allowOther?: boolean;
+  otherAnswers?: string[];
+  autoAIEval?: boolean;
+  maxChars?: number;
+  minChars?: number;
+  aiEvalMode?: AIApproveMode;
+  aiPrompt?: string;
+  aiTagging?: boolean;
   negativeMarking?: boolean;
-  negativeMarkingValue?: number;
-  aiSettings?: {
-    mode: 'NONE' | 'EVALUATE';
-    prompt?: string;
-  };
+  correctAnswers?: string[];
+  otpVerification?: boolean;
+  points?: number;
 }
 
-export interface Page {
+export interface FormPage {
   id: string;
   title: string;
-  fields: Field[];
-  navigationControl?: {
-    allowRevisiting: boolean;
-  };
-  redirectionLogics?: any[];
+  fields: FormField[];
 }
 
-export interface Form {
+export interface FormSettings {
+  allowCopyPaste: boolean;
+  isPublicSurvey: boolean;
+  whitelist: string[];
+  blacklist: string[];
+  accessMode: 'whitelist' | 'blacklist' | 'none';
+  resultReveal: 'instant' | 'scheduled' | 'approval';
+  revealDate?: string;
+  allowRevisit: boolean;
+  admins: { email: string; canEdit: boolean }[];
+}
+
+export interface FormSchema {
   id: string;
+  creatorId: string;
   title: string;
-  subtitle?: string;
-  description: string;
+  subtitle: string;
   bannerUrl?: string;
-  pages: Page[];
-  status: 'draft' | 'published';
+  status: FormStatus;
+  pages: FormPage[];
+  settings: FormSettings;
   createdAt: number;
-  updatedAt?: number;
-  ownerId: string;
-  responsesCount: number;
-  settings?: {
-    results: {
-      showAfterSubmission: boolean;
-    };
-  };
-}
-
-export interface Answer {
-  fieldId: string;
-  value: any;
-  pointsEarned: number;
-  aiFeedback?: string;
-  aiEvaluation?: {
-    marks: number;
-    reason: string;
-    tag: string;
-  };
-}
-
-export interface FormResponse {
-  id: string;
-  formId: string;
-  respondentUid: string;
-  answers: Answer[];
-  totalScore: number;
-  submittedAt: number;
+  responseCount: number;
+  expiryDate?: string;
+  cost_per_response: number;
+  resultsReleased?: boolean;
 }
